@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ದೈನಂದಿನ ಕನ್ನಡ ಕನೆಕ್ಷನ್ಸ್</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&display=swap');
+
+        :root {
+            --background-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --card-border: #444;
+            --selected-bg: #004d40;
+            --button-bg: #00796b;
+            --button-hover-bg: #004d40;
+            --button-text: #ffffff;
+            --error-color: #cf6679;
+            --disabled-bg: #444;
+
+            --correct-yellow: #fdd835; /* Easy */
+            --correct-green: #7cb342;  /* Medium */
+            --correct-blue: #0288d1;   /* Hard */
+            --correct-purple: #8e24aa; /* Hardest */
+            --correct-text: #121212;
+        }
+
+        body {
+            font-family: 'Noto Sans Kannada', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--button-bg);
+            margin-bottom: 1rem;
+        }
+
+        #instructions {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            color: #aaa;
+        }
+
+        #found-groups-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .found-group {
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+            color: var(--correct-text);
+        }
+
+        .found-group h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .found-group p {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        #grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .grid-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 65px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .grid-item.selected {
+            background-color: var(--selected-bg);
+            transform: scale(1.05);
+            border-color: var(--button-bg);
+        }
+
+        .grid-item.shake {
+            animation: shake 0.4s;
+        }
+        
+        .correct-group-yellow { background-color: var(--correct-yellow); }
+        .correct-group-green { background-color: var(--correct-green); }
+        .correct-group-blue { background-color: var(--correct-blue); }
+        .correct-group-purple { background-color: var(--correct-purple); }
+
+        #controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-family: 'Noto Sans Kannada', sans-serif;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+        }
+
+        button:disabled {
+            background-color: var(--disabled-bg);
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        #mistakes-container {
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .mistake-dot {
+            height: 18px;
+            width: 18px;
+            background-color: var(--card-border);
+            border-radius: 50%;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+
+        .mistake-dot.lost {
+            background-color: var(--error-color);
+        }
+
+        #message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            min-height: 1.5rem;
+            font-weight: bold;
+            color: #eee;
+        }
+        
+        #game-over-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            z-index: 100;
+            animation: fadeIn 0.5s;
+            overflow-y: auto;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        #game-over-box {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        #game-over-box h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        #solution-display {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        #game-over-box button {
+            margin-top: 1.5rem;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 600px) {
+            body { align-items: flex-start; }
+            h1 { font-size: 2rem; }
+            .grid-item { min-height: 60px; font-size: 1rem; }
+            #game-over-box { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>ದೈನಂದಿನ ಕನ್ನಡ ಕನೆಕ್ಷನ್ಸ್</h1>
+    <p id="instructions">ಒಂದು ಗುಂಪನ್ನು ರೂಪಿಸುವ ನಾಲ್ಕು ಪದಗಳನ್ನು ಹುಡುಕಿ.</p>
+    
+    <div id="found-groups-container"></div>
+    <div id="grid-container"></div>
+    
+    <div id="message"></div>
+    
+    <div id="mistakes-container">
+        <span>ತಪ್ಪುಗಳು ಉಳಿದಿವೆ:</span>
+        <div class="mistake-dot"></div>
+        <div class="mistake-dot"></div>
+        <div class="mistake-dot"></div>
+        <div class="mistake-dot"></div>
+    </div>
+    
+    <div id="controls">
+        <button id="shuffle-button">ಬದಲಾಯಿಸು</button>
+        <button id="deselect-all-button">ಎಲ್ಲವನ್ನೂ ಅಳಿಸು</button>
+        <button id="submit-button" disabled>ಸಲ್ಲಿಸು</button>
+    </div>
+</div>
+
+<div id="game-over-screen">
+    <div id="game-over-box">
+        <h2 id="game-over-title"></h2>
+        <p id="game-over-message"></p>
+        <div id="solution-display"></div>
+        <button id="play-again-button">ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ</button>
+    </div>
+</div>
+
+<script>
+// --- START: ONE-MONTH+ PUZZLE LIBRARY ---
+const puzzles = [
+    { // Puzzle 1
+        solution: { 'ನೋಡು (ಸಮಾನಾರ್ಥಕಗಳು)': ['ವೀಕ್ಷಿಸು', 'ಅವಲೋಕಿಸು', 'ಪರಿಶೀಲಿಸು', 'ನಿರೀಕ್ಷಿಸು'], 'ಮಾತನಾಡು (ಸಮಾನಾರ್ಥಕಗಳು)': ['ಸಂಭಾಷಿಸು', 'ನುಡಿ', 'ಹೇಳು', 'ಉಚ್ಚರಿಸು'], 'ಸಾಹಿತ್ಯ ಪ್ರಕಾರಗಳು': ['ಕಾದಂಬರಿ', 'ಕವಿತೆ', 'ನಾಟಕ', 'ಪ್ರಬಂಧ'], 'ಮಳೆ ಸಂಬಂಧಿತ ಪದಗಳು': ['ಸಿಡಿಲು', 'ಮಿಂಚು', 'ಮೋಡ', 'ಗಾಳಿ'] },
+        difficulty: { 'ಮಳೆ ಸಂಬಂಧಿತ ಪದಗಳು': 'yellow', 'ಸಾಹಿತ್ಯ ಪ್ರಕಾರಗಳು': 'green', 'ಮಾತನಾಡು (ಸಮಾನಾರ್ಥಕಗಳು)': 'blue', 'ನೋಡು (ಸಮಾನಾರ್ಥಕಗಳು)': 'purple' }
+    },
+    { // Puzzle 2
+        solution: { 'ದೇಹದ ಭಾಗಗಳು (ಕಣ್ಣು)': ['ರೆಪ್ಪೆ', 'ಪಾಪೆ', 'ಭ್ರೂ', 'ದೃಷ್ಟಿ'], 'ಭಾವನೆಗಳು': ['ಕೋಪ', 'ಪ್ರೀತಿ', 'ದುಃಖ', 'ಸಂತೋಷ'], 'ಅಳತೆಯ ಸಾಧನಗಳು': ['ತೂಕ', 'ಅಳತೆಪಟ್ಟಿ', 'ಗಡಿಯಾರ', 'ಉಷ್ಣಮಾಪಕ'], 'ಬರವಣಿಗೆಗೆ ಸಂಬಂಧಿಸಿದ': ['ಲೇಖನಿ', 'ಕಾಗದ', 'ಮಸಿ', 'ಅಕ್ಷರ'] },
+        difficulty: { 'ಭಾವನೆಗಳು': 'yellow', 'ಬರವಣಿಗೆಗೆ ಸಂಬಂಧಿಸಿದ': 'green', 'ಅಳತೆಯ ಸಾಧನಗಳು': 'blue', 'ದೇಹದ ಭಾಗಗಳು (ಕಣ್ಣು)': 'purple' }
+    },
+    { // Puzzle 3
+        solution: { 'ಸಂಗೀತ': ['ರಾಗ', 'ತಾಳ', 'ಲಯ', 'ಗಾನ'], 'ಹೂವಿನ ಹೆಸರುಗಳು': ['ಮಲ್ಲಿಗೆ', 'ಸಂಪಿಗೆ', 'ಗುಲಾಬಿ', 'ಕಮಲ'], '"ಅರ" ಪದದ ಅರ್ಥಗಳು': ['ರಾಜ', 'ಚಕ್ರ', 'ಅರ್ಧ', 'ಕತ್ತರಿಸು'], 'ವೃತ್ತಿಗಳು': ['ವೈದ್ಯ', 'ಶಿಕ್ಷಕ', 'ವಕೀಲ', 'ಇಂಜಿನಿಯರ್'] },
+        difficulty: { 'ಹೂವಿನ ಹೆಸರುಗಳು': 'yellow', 'ವೃತ್ತಿಗಳು': 'green', 'ಸಂಗೀತ': 'blue', '"ಅರ" ಪದದ ಅರ್ಥಗಳು': 'purple' }
+    },
+    { // Puzzle 4
+        solution: { 'ಪಂಚಭೂತಗಳು': ['ಭೂಮಿ', 'ಆಕಾಶ', 'ಬೆಂಕಿ', 'ನೀರು'], 'ಕ್ರಿಯಾಪದಗಳು': ['ನಗು', 'ಅಳು', 'ನಡೆ', 'ಕುಳಿ'], 'ನವರಸಗಳು': ['ಹಾಸ್ಯ', 'ಶೃಂಗಾರ', 'ಕರುಣ', 'ರೌದ್ರ'], 'ಬೆಂಗಳೂರಿನ ಸ್ಥಳಗಳು': ['ಮೆಜೆಸ್ಟಿಕ್', 'ಜಯನಗರ', 'ಮಲ್ಲೇಶ್ವರಂ', 'ಕೋರಮಂಗಲ'] },
+        difficulty: { 'ಪಂಚಭೂತಗಳು': 'yellow', 'ಕ್ರಿಯಾಪದಗಳು': 'green', 'ಬೆಂಗಳೂರಿನ ಸ್ಥಳಗಳು': 'blue', 'ನವರಸಗಳು': 'purple' }
+    },
+    { // Puzzle 5
+        solution: { 'ರುಚಿಗಳು': ['ಸಿಹಿ', 'ಕಹಿ', 'ಹುಳಿ', 'ಖಾರ'], 'ಅಡುಗೆ ಪಾತ್ರೆಗಳು': ['ಬೋಗುಣಿ', 'ಸೌಟು', 'ತಟ್ಟೆ', 'ಲೋಟ'], 'ಧಾನ್ಯಗಳು': ['ಅಕ್ಕಿ', 'ಗೋಧಿ', 'ರಾಗಿ', 'ಜೋಳ'], 'ಶರೀರದ ಕೀಲುಗಳು': ['ಮೊಣಕಾಲು', 'ಮೊಣಕೈ', 'ಭುಜ', 'ಸೊಂಟ'] },
+        difficulty: { 'ರುಚಿಗಳು': 'yellow', 'ಧಾನ್ಯಗಳು': 'green', 'ಅಡುಗೆ ಪಾತ್ರೆಗಳು': 'blue', 'ಶರೀರದ ಕೀಲುಗಳು': 'purple' }
+    },
+    { // Puzzle 6
+        solution: { 'ಸಂಬಂಧಗಳು': ['ತಾಯಿ', 'ತಂದೆ', 'ಮಗ', 'ಮಗಳು'], 'ಸಂಖ್ಯೆಗಳು': ['ಒಂದು', 'ಹತ್ತು', 'ನೂರು', 'ಸಾವಿರ'], 'ಕರ್ನಾಟಕದ ನದಿಗಳು': ['ಕಾವೇರಿ', 'ತುಂಗಭದ್ರ', 'ಶರಾವತಿ', 'ಕೃಷ್ಣಾ'], 'ಕನ್ನಡ ದಿನಪತ್ರಿಕೆಗಳು': ['ಪ್ರಜಾವಾಣಿ', 'ವಿಜಯವಾಣಿ', 'ಉದಯವಾಣಿ', 'ಕನ್ನಡಪ್ರಭ'] },
+        difficulty: { 'ಸಂಬಂಧಗಳು': 'yellow', 'ಸಂಖ್ಯೆಗಳು': 'green', 'ಕರ್ನಾಟಕದ ನದಿಗಳು': 'blue', 'ಕನ್ನಡ ದಿನಪತ್ರಿಕೆಗಳು': 'purple' }
+    },
+    { // Puzzle 7
+        solution: { 'ಆಭರಣಗಳು': ['ಸರ', 'ಬಳೆ', 'ಓಲೆ', 'ಉಂಗುರ'], 'ಮರಗಳು': ['ಆಲ', 'ಅರಳಿ', 'ಬೇವು', 'ತೆಂಗು'], 'ಕನ್ನಡದ ಜ್ಞಾನಪೀಠ ಪ್ರಶಸ್ತಿ ಪುರಸ್ಕೃತರು': ['ಕುವೆಂಪು', 'ಬೇಂದ್ರೆ', 'ಕಾರಂತ', 'ಮಾಸ್ತಿ'], 'ದೇಹದ ಒಳಗಿನ ಅಂಗಗಳು': ['ಹೃದಯ', 'ಮೂತ್ರಪಿಂಡ', 'ಶ್ವಾಸಕೋಶ', 'ಯಕೃತ್ತು'] },
+        difficulty: { 'ಆಭರಣಗಳು': 'yellow', 'ಮರಗಳು': 'green', 'ದೇಹದ ಒಳಗಿನ ಅಂಗಗಳು': 'blue', 'ಕನ್ನಡದ ಜ್ಞಾನಪೀಠ ಪ್ರಶಸ್ತಿ ಪುರಸ್ಕೃತರು': 'purple' }
+    },
+    { // Puzzle 8
+        solution: { 'ಯುಗಾದಿ ಹಬ್ಬದ ತಿಂಡಿಗಳು': ['ಒಬ್ಬಟ್ಟು', 'ಕೋಸಂಬರಿ', 'ಪಾನಕ', 'ಬೇವುಬೆಲ್ಲ'], 'ಹವಾಮಾನ': ['ಬಿಸಿಲು', 'ಚಳಿ', 'ಮಂಜು', 'ಗಾಳಿ'], 'ಕಂಪ್ಯೂಟರ್ ಭಾಗಗಳು': ['ಮೌಸ್', 'ಕೀಬೋರ್ಡ್', 'ಮಾನಿಟರ್', 'ಸಿಪಿಯು'], '"ಕೈ" ಗೆ ಸಂಬಂಧಿಸಿದ ನುಡಿಗಟ್ಟುಗಳು': ['ಕೈಯಲ್ಲಾಗದ', 'ಕೈತೊಳೆದುಕೊ', 'ಕೈಚೆಲ್ಲು', 'ಕೈಕೊಡು'] },
+        difficulty: { 'ಹವಾಮಾನ': 'yellow', 'ಕಂಪ್ಯೂಟರ್ ಭಾಗಗಳು': 'green', 'ಯುಗಾದಿ ಹಬ್ಬದ ತಿಂಡಿಗಳು': 'blue', '"ಕೈ" ಗೆ ಸಂಬಂಧಿಸಿದ ನುಡಿಗಟ್ಟುಗಳು': 'purple' }
+    },
+    { // Puzzle 9
+        solution: { 'ಬಣ್ಣಗಳು': ['ಕೆಂಪು', 'ನೀಲಿ', 'ಹಸಿರು', 'ಕಪ್ಪು'], 'ರಾಜ್ಯದ ಚಿಹ್ನೆಗಳು': ['ಗಂಡಭೇರುಂಡ', 'ಆನೆ', 'ಕಮಲ', 'ಶ್ರೀಗಂಧ'], 'ಪೌರಾಣಿಕ ಅಸ್ತ್ರಗಳು': ['ಬ್ರಹ್ಮಾಸ್ತ್ರ', 'ಪಾಶುಪತಾಸ್ತ್ರ', 'ಸುದರ್ಶನ', 'ನಾರಾಯಣಾಸ್ತ್ರ'], 'ಆಲೋಚಿಸು (ಸಮಾನಾರ್ಥಕಗಳು)': ['ಚಿಂತಿಸು', 'ಯೋಚಿಸು', 'ಪರ್ಯಾಲೋಚಿಸು', 'ವಿಮರ್ಶಿಸು'] },
+        difficulty: { 'ಬಣ್ಣಗಳು': 'yellow', 'ರಾಜ್ಯದ ಚಿಹ್ನೆಗಳು': 'green', 'ಆಲೋಚಿಸು (ಸಮಾನಾರ್ಥಕಗಳು)': 'blue', 'ಪೌರಾಣಿಕ ಅಸ್ತ್ರಗಳು': 'purple' }
+    },
+    { // Puzzle 10
+        solution: { 'ಕರ್ನಾಟಕದ ಪ್ರವಾಸಿ ತಾಣಗಳು': ['ಹಂಪಿ', 'ಮೈಸೂರು', 'ಬಾದಾಮಿ', 'ಗೋಕರ್ಣ'], 'ಸಮಯ ಸೂಚಕಗಳು': ['ನಿನ್ನೆ', 'ಇಂದು', 'ನಾಳೆ', 'ಮೊನ್ನೆ'], 'ನಾಟಕದ ಅಂಶಗಳು': ['ಪಾತ್ರ', 'ಸಂಭಾಷಣೆ', 'ರಂಗಸ್ಥಳ', 'ನಿರ್ದೇಶಕ'], '"ತಲೆ" ಪದದ ನುಡಿಗಟ್ಟುಗಳು': ['ತಲೆನೋವು', 'ತಲೆಹರಟೆ', 'ತಲೆತಿನ್ನು', 'ತಲೆದಂಡ'] },
+        difficulty: { 'ಸಮಯ ಸೂಚಕಗಳು': 'yellow', 'ಕರ್ನಾಟಕದ ಪ್ರವಾಸಿ ತಾಣಗಳು': 'green', 'ನಾಟಕದ ಅಂಶಗಳು': 'blue', '"ತಲೆ" ಪದದ ನುಡಿಗಟ್ಟುಗಳು': 'purple' }
+    },
+    { // Puzzle 11
+        solution: { 'ವಾಹನಗಳು': ['ಕಾರು', 'ಬಸ್ಸು', 'ವಿಮಾನ', 'ಹಡಗು'], 'ಆಕಾರಗಳು': ['ವೃತ್ತ', 'ಚೌಕ', 'ತ್ರಿಕೋನ', 'ಆಯತ'], 'ಸಮುದ್ರ ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಸಾಗರ', 'ಕಡಲು', 'ಅಂಬುಧಿ', 'ರತ್ನಾಕರ'], 'ರಾಮಾಯಣದ ಪಾತ್ರಗಳು': ['ರಾಮ', 'ಸೀತೆ', 'ರಾವಣ', 'ಹನುಮಂತ'] },
+        difficulty: { 'ವಾಹನಗಳು': 'yellow', 'ಆಕಾರಗಳು': 'green', 'ರಾಮಾಯಣದ ಪಾತ್ರಗಳು': 'blue', 'ಸಮುದ್ರ ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 12
+        solution: { 'ಮಸಾಲೆ ಪದಾರ್ಥಗಳು': ['ಲವಂಗ', 'ಚಕ್ಕೆ', 'ಏಲಕ್ಕಿ', 'ಕಾಳುಮೆಣಸು'], 'ಕ್ರಿಕೆಟ್ ಪದಗಳು': ['ವಿಕೆಟ್', 'ಬೌಂಡರಿ', 'ಕ್ಯಾಚ್', 'ರನೌಟ್'], 'ಪಂಚೇಂದ್ರಿಯಗಳು': ['ಕಣ್ಣು', 'ಕಿವಿ', 'ಮೂಗು', 'ನಾಲಿಗೆ'], '"ಬೆಳಕು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಪ್ರಕಾಶ', 'ಕಾಂತಿ', 'ತೇಜಸ್ಸು', 'ದ್ಯುತಿ'] },
+        difficulty: { 'ಮಸಾಲೆ ಪದಾರ್ಥಗಳು': 'yellow', 'ಕ್ರಿಕೆಟ್ ಪದಗಳು': 'green', 'ಪಂಚೇಂದ್ರಿಯಗಳು': 'blue', '"ಬೆಳಕು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 13
+        solution: { 'ಕನ್ನಡ ಅಂಕಿಗಳು': ['ಒಂಬತ್ತು', 'ನಾಲ್ಕು', 'ಏಳು', 'ಎರಡು'], 'ಶಾಸ್ತ್ರೀಯ ನೃತ್ಯ ಪ್ರಕಾರಗಳು': ['ಭರತನಾಟ್ಯ', 'ಕಥಕ್ಕಳಿ', 'ಕೂಚಿಪುಡಿ', 'ಮೋಹಿನಿಯಾಟ್ಟಂ'], 'ಬೆಳಗಿನ ತಿಂಡಿಗಳು': ['ಇಡ್ಲಿ', 'ದೋಸೆ', 'ಉಪ್ಪಿಟ್ಟು', 'ವಡೆ'], 'ಗಾದೆಗಳು: ____ ರೀತಿ ಮಾತು': ['ಮುತ್ತಿನ', 'ಹಾಲಿನ', 'ಜೇನಿನ', 'ಮಲ್ಲಿಗೆ'] },
+        difficulty: { 'ಕನ್ನಡ ಅಂಕಿಗಳು': 'yellow', 'ಬೆಳಗಿನ ತಿಂಡಿಗಳು': 'green', 'ಶಾಸ್ತ್ರೀಯ ನೃತ್ಯ ಪ್ರಕಾರಗಳು': 'blue', 'ಗಾದೆಗಳು: ____ ರೀತಿ ಮಾತು': 'purple' }
+    },
+    { // Puzzle 14
+        solution: { 'ತರಕಾರಿಗಳು': ['ಕ್ಯಾರೆಟ್', 'ಹೂಕೋಸು', 'ಬೀನ್ಸ್', 'ಸೌತೆಕಾಯಿ'], 'ಸಂಗೀತ ವಾದ್ಯಗಳು': ['ವೀಣೆ', 'ತಬಲ', 'ಪಿಟೀಲು', 'ಕೊಳಲು'], 'ಮಹಾಭಾರತದ ಪಾತ್ರಗಳು': ['ಅರ್ಜುನ', 'ಕರ್ಣ', 'ದಂಪತಿ', 'ಭೀಷ್ಮ'], '"ಮನಸ್ಸು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಚಿತ್ತ', 'ಹೃದಯ', 'ಅಂತರಂಗ', 'ಆತ್ಮ'] },
+        difficulty: { 'ತರಕಾರಿಗಳು': 'yellow', 'ಸಂಗೀತ ವಾದ್ಯಗಳು': 'green', 'ಮಹಾಭಾರತದ ಪಾತ್ರಗಳು': 'blue', '"ಮನಸ್ಸು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 15
+        solution: { 'ಸೊಪ್ಪುಗಳು': ['ಪಾಲಕ್', 'ಮೆಂತ್ಯ', 'ಸಬ್ಬಸಿಗೆ', 'ದಂಟು'], 'ನಕ್ಷತ್ರಗಳು': ['ಸೂರ್ಯ', 'ಧ್ರುವ', 'ಸಪ್ತರ್ಷಿ', 'ಅರುಂಧತಿ'], 'ಯಕ್ಷಗಾನದ ಅಂಶಗಳು': ['ಭಾಗವತಿಕೆ', 'ಚೆಂಡೆ', 'ವೇಷ', 'ಪ್ರಸಂಗ'], 'ದ್ವಂದ್ವ ಪದಗಳು (Rhyming Pairs)': ['ಆಳುಕಾಳು', 'ಹಳ್ಳಕೊಳ್ಳ', 'ಕಾಡುಮೇಡು', 'ಬಟ್ಟೆಬರೆ'] },
+        difficulty: { 'ಸೊಪ್ಪುಗಳು': 'yellow', 'ನಕ್ಷತ್ರಗಳು': 'green', 'ಯಕ್ಷಗಾನದ ಅಂಶಗಳು': 'blue', 'ದ್ವಂದ್ವ ಪದಗಳು (Rhyming Pairs)': 'purple' }
+    },
+    { // Puzzle 16
+        solution: { 'ಹಣ್ಣುಗಳು': ['ಸೇಬು', 'ಕಿತ್ತಳೆ', 'ದ್ರಾಕ್ಷಿ', 'ಕಲ್ಲಂಗಡಿ'], 'ಲೇಖನ ಸಾಮಗ್ರಿಗಳು': ['ಪೆನ್ಸಿಲ್', 'ರಬ್ಬರ್', 'ಪುಸ್ತಕ', 'ಚೀಲ'], 'ಕೋಟೆಗಳಿರುವ ಸ್ಥಳಗಳು': ['ಚಿತ್ರದುರ್ಗ', 'ಬೀದರ್', 'ಬಸವಕಲ್ಯಾಣ', 'ಬಳ್ಳಾರಿ'], '"ಚಂದ್ರ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಶಶಿ', 'ಇಂದು', 'ಸೋಮ', 'ತಿಂಗಳು'] },
+        difficulty: { 'ಹಣ್ಣುಗಳು': 'yellow', 'ಲೇಖನ ಸಾಮಗ್ರಿಗಳು': 'green', 'ಕೋಟೆಗಳಿರುವ ಸ್ಥಳಗಳು': 'blue', '"ಚಂದ್ರ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 17
+        solution: { 'ಪ್ರಾಣಿಗಳು': ['ಸಿಂಹ', 'ಹುಲಿ', 'ಕರಡಿ', 'ಜಿಂಕೆ'], 'ಅಡುಗೆ ವಿಧಾನಗಳು': ['ಹುರಿಯುವುದು', 'ಬೇಯಿಸುವುದು', 'ಕರಿಯುವುದು', 'ಆವಿಯಲ್ಲಿಡುವುದು'], 'ಕನ್ನಡ ಛಂದಸ್ಸು': ['ಷಟ್ಪದಿ', 'ರಗಳೆ', 'ತ್ರಿಪದಿ', 'ಕಂದ'], 'ಬೆಂಗಳೂರಿನ ಕೆರೆಗಳು': ['ಉಳಸೂರು', 'ಸ್ಯಾಂಕಿ', 'ಹೆಬ್ಬಾಳ', 'ಬೆಳ್ಳಂದೂರು'] },
+        difficulty: { 'ಪ್ರಾಣಿಗಳು': 'yellow', 'ಅಡುಗೆ ವಿಧಾನಗಳು': 'green', 'ಬೆಂಗಳೂರಿನ ಕೆರೆಗಳು': 'blue', 'ಕನ್ನಡ ಛಂದಸ್ಸು': 'purple' }
+    },
+    { // Puzzle 18
+        solution: { 'ಪಕ್ಷಿಗಳು': ['ಗಿಳಿ', 'ನವಿಲು', 'ಕಾಗೆ', 'ಗುಬ್ಬಿ'], 'ವೈದ್ಯಕೀಯ ಉಪಕರಣಗಳು': ['ಸ್ಟೆತಸ್ಕೋಪ್', 'ಸೂಜಿ', 'ಕತ್ತರಿ', 'ಥರ್ಮಾಮೀಟರ್'], 'ಕನ್ನಡ ಸಂಧಿಗಳು': ['ಲೋಪ', 'ಆಗಮ', 'ಆದೇಶ', 'ಗುಣ'], '"ಮಾತು" ಪದದ ನುಡಿಗಟ್ಟುಗಳು': ['ಮಾತುಕತೆ', 'ಮಾತುಬರದಿರು', 'ಮಾತುಕೊಡು', 'ಮಾತುಬೆಳೆಸು'] },
+        difficulty: { 'ಪಕ್ಷಿಗಳು': 'yellow', 'ವೈದ್ಯಕೀಯ ಉಪಕರಣಗಳು': 'green', 'ಕನ್ನಡ ಸಂಧಿಗಳು': 'blue', '"ಮಾತು" ಪದದ ನುಡಿಗಟ್ಟುಗಳು': 'purple' }
+    },
+    { // Puzzle 19
+        solution: { 'ಕೀಟಗಳು': ['ನೊಣ', 'ಸೊಳ್ಳೆ', 'ಇರುವೆ', 'ಜೇಡ'], 'ಕಟ್ಟಡದ ಭಾಗಗಳು': ['ಗೋಡೆ', 'ಛಾವಣಿ', 'ಕಿಟಕಿ', 'ಬಾಗಿಲು'], 'ವಿಜಯನಗರದ ಅರಸರು': ['ಹರಿಹರ', 'ಬುಕ್ಕ', 'ಕೃಷ್ಣದೇವರಾಯ', 'ರಾಮರಾಯ'], '"ನೀರು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಜಲ', 'ಉದಕ', 'ಅಂಬು', 'ಸಲಿಲ'] },
+        difficulty: { 'ಕೀಟಗಳು': 'yellow', 'ಕಟ್ಟಡದ ಭಾಗಗಳು': 'green', 'ವಿಜಯನಗರದ ಅರಸರು': 'blue', '"ನೀರು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 20
+        solution: { 'ಭೂಖಂಡಗಳು': ['ಏಷ್ಯಾ', 'ಆಫ್ರಿಕಾ', 'ಯುರೋಪ್', 'ಅಮೆರಿಕ'], 'ಕೃಷಿ ಉಪಕರಣಗಳು': ['ನೇಗಿಲು', 'ಕುಡುಗೋಲು', 'ಗುದ್ದಲಿ', 'ಕೊಡಲಿ'], 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ಕಾದಂಬರಿಗಳು': ['ಮಲೆಗಳಲ್ಲಿ ಮದುಮಗಳು', 'ಚೋಮನದುಡಿ', 'ಮರಳಿ ಮಣ್ಣಿಗೆ', 'ಬೆಟ್ಟದ ಜೀವ'], '"ದಾರಿ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಮಾರ್ಗ', 'ಪಥ', 'ರಸ್ತೆ', 'ಸರಣಿ'] },
+        difficulty: { 'ಭೂಖಂಡಗಳು': 'yellow', 'ಕೃಷಿ ಉಪಕರಣಗಳು': 'green', 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ಕಾದಂಬರಿಗಳು': 'blue', '"ದಾರಿ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 21
+        solution: { 'ದಿಕ್ಕುಗಳು': ['ಪೂರ್ವ', 'ಪಶ್ಚಿಮ', 'ಉತ್ತರ', 'ದಕ್ಷಿಣ'], 'ಹಲ್ಲಿನ ಪ್ರಕಾರಗಳು': ['ಬಾಚಿಹಲ್ಲು', 'ಕೋರೆಹಲ್ಲು', 'ದವಡೆಹಲ್ಲು', 'ಜ್ಞಾನಹಲ್ಲು'], 'ದಶಾವತಾರ': ['ಮತ್ಸ್ಯ', 'ಕೂರ್ಮ', 'ವರಾಹ', 'ನರಸಿಂಹ'], '"ಚಿನ್ನ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಹೇಮ', 'ಕನಕ', 'ಸುವರ್ಣ', 'ಕಾಂಚನ'] },
+        difficulty: { 'ದಿಕ್ಕುಗಳು': 'yellow', 'ಹಲ್ಲಿನ ಪ್ರಕಾರಗಳು': 'green', 'ದಶಾವತಾರ': 'blue', '"ಚಿನ್ನ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 22
+        solution: { 'ಧರ್ಮಗಳು': ['ಹಿಂದೂ', 'ಇಸ್ಲಾಂ', 'ಕ್ರೈಸ್ತ', 'ಬೌದ್ಧ'], 'ಕಂಪ್ಯೂಟರ್ ಪರಿಭಾಷೆ': ['ಸಾಫ್ಟ್‌ವೇರ್', 'ಹಾರ್ಡ್‌ವೇರ್', 'ಇಂಟರ್ನೆಟ್', 'ಡೇಟಾ'], 'ವಿಭಕ್ತಿ ಪ್ರತ್ಯಯಗಳು': ['ಉ', 'ಅನ್ನು', 'ಇಂದ', 'ಗೆ'], '"ಕಾಲು" ಪದದ ನುಡಿಗಟ್ಟುಗಳು': ['ಕಾಲುಕಡಿ', 'ಕಾಲು ಜಾರು', 'ಕಾಲೆಳೆ', 'ಕಾಲುಮುರಿ'] },
+        difficulty: { 'ಧರ್ಮಗಳು': 'yellow', 'ಕಂಪ್ಯೂಟರ್ ಪರಿಭಾಷೆ': 'green', 'ವಿಭಕ್ತಿ ಪ್ರತ್ಯಯಗಳು': 'blue', '"ಕಾಲು" ಪದದ ನುಡಿಗಟ್ಟುಗಳು': 'purple' }
+    },
+    { // Puzzle 23
+        solution: { 'ಪುರಾಣಗಳ ಪ್ರಕಾರ ಲೋಕಗಳು': ['ಭೂಲೋಕ', 'ಪಾತಾಳ', 'ಸ್ವರ್ಗ', 'ನರಕ'], 'ಚಲನಚಿತ್ರದ ಪ್ರಕಾರಗಳು': ['ಕಾಮಿಡಿ', 'ಥ್ರಿಲ್ಲರ್', 'ಡ್ರಾಮಾ', 'ಆಕ್ಷನ್'], 'ಕರ್ನಾಟಕದ ಜಲಪಾತಗಳು': ['ಜೋಗ', 'ಶಿವನಸಮುದ್ರ', 'ಅಬ್ಬೆ', 'ಗೋಕಾಕ್'], '"ಬೆಂಕಿ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಅಗ್ನಿ', 'ಅನಲ', 'ಪಾವಕ', 'ಜ್ವಾಲೆ'] },
+        difficulty: { 'ಚಲನಚಿತ್ರದ ಪ್ರಕಾರಗಳು': 'yellow', 'ಪುರಾಣಗಳ ಪ್ರಕಾರ ಲೋಕಗಳು': 'green', 'ಕರ್ನಾಟಕದ ಜಲಪಾತಗಳು': 'blue', '"ಬೆಂಕಿ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 24
+        solution: { 'ಬೇಳೆಕಾಳುಗಳು': ['ತೊಗರಿ', 'ಹೆಸರು', 'ಉದ್ದು', 'ಕಡಲೆ'], 'ಮದುವೆಯ ಶಾಸ್ತ್ರಗಳು': ['ನಿಶ್ಚಿತಾರ್ಥ', 'ಧಾರೆಯೆರೆಯುವುದು', 'ಸಪ್ತಪದಿ', 'ಕಾಶಿ ಯಾತ್ರೆ'], 'ಹೊಯ್ಸಳ ದೇವಾಲಯಗಳಿರುವ ಸ್ಥಳಗಳು': ['ಬೇಲೂರು', 'ಹಳೇಬೀಡು', 'ಸೋಮನಾಥಪುರ', 'ದೊಡ್ಡಗದ್ದವಳ್ಳಿ'], '"ಗೆಲುವು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಜಯ', 'ವಿಜಯ', 'ಯಶಸ್ಸು', 'ಸಿದ್ಧಿ'] },
+        difficulty: { 'ಬೇಳೆಕಾಳುಗಳು': 'yellow', 'ಮದುವೆಯ ಶಾಸ್ತ್ರಗಳು': 'green', 'ಹೊಯ್ಸಳ ದೇವಾಲಯಗಳಿರುವ ಸ್ಥಳಗಳು': 'blue', '"ಗೆಲುವು" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 25
+        solution: { 'ದೇವಾಲಯದ ಭಾಗಗಳು': ['ಗರ್ಭಗುಡಿ', 'ವಿಮಾನ', 'ಮಂಟಪ', 'ಧ್ವಜಸ್ತಂಭ'], 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ಕವಿಗಳು': ['ಪಂಪ', 'ರನ್ನ', 'ಜನ್ನ', 'ಪೊನ್ನ'], 'ಚಾಲುಕ್ಯರ ರಾಜಧಾನಿಗಳು': ['ಬಾದಾಮಿ', 'ಕಲ್ಯಾಣಿ', 'ಪಟ್ಟದಕಲ್ಲು', 'ಐಹೊಳೆ'], '"ಆಕಾಶ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಗಗನ', 'ಅಂಬರ', 'ವ್ಯೋಮ', 'ಬಾನು'] },
+        difficulty: { 'ದೇವಾಲಯದ ಭಾಗಗಳು': 'yellow', 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ಕವಿಗಳು': 'green', 'ಚಾಲುಕ್ಯರ ರಾಜಧಾನಿಗಳು': 'blue', '"ಆಕಾಶ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 26
+        solution: { 'ಮನುಷ್ಯನ ಜೀವನ ಹಂತಗಳು': ['ಶೈಶವ', 'ಬಾಲ್ಯ', 'ಯೌವನ', 'ವೃದ್ಧಾಪ್ಯ'], 'ಕಾಫಿ ಮತ್ತು ಟೀ': ['ಡಿಕಾಕ್ಷನ್', 'ಹಾಲು', 'ಸಕ್ಕರೆ', 'ಪುಡಿ'], 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ವಚನಕಾರರು': ['ಬಸವಣ್ಣ', 'ಅಕ್ಕಮಹಾದೇವಿ', 'ಅಲ್ಲಮಪ್ರಭು', 'ಸಿದ್ದರಾಮ'], '"ಸ್ನೇಹಿತ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಗೆಳೆಯ', 'ಮಿತ್ರ', 'ಸಖ', 'ಆಪ್ತ'] },
+        difficulty: { 'ಕಾಫಿ ಮತ್ತು ಟೀ': 'yellow', 'ಮನುಷ್ಯನ ಜೀವನ ಹಂತಗಳು': 'green', 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ವಚನಕಾರರು': 'blue', '"ಸ್ನೇಹಿತ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 27
+        solution: { 'ಸಂಚಾರ ನಿಯಮಗಳು': ['ನಿಲ್ಲು', 'ಹೋಗು', 'ನಿಧಾನಿಸು', 'ತಿರುವು'], 'ಹಬ್ಬಗಳು': ['ದೀಪಾವಳಿ', 'ದಸರಾ', 'ರಂಜಾನ್', 'ಕ್ರಿಸ್ಮಸ್'], 'ವಿರಾಮ ಚಿಹ್ನೆಗಳು': ['ಪೂರ್ಣವಿರಾಮ', 'ಅಲ್ಪವಿರಾಮ', 'ಪ್ರಶ್ನಾರ್ಥಕ', 'ಭಾವಸೂಚಕ'], '"ಸುಂದರ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಚೆಂದ', 'ಅಂದ', 'ಲಲಿತ', 'ಮನೋಹರ'] },
+        difficulty: { 'ಸಂಚಾರ ನಿಯಮಗಳು': 'yellow', 'ಹಬ್ಬಗಳು': 'green', 'ವಿರಾಮ ಚಿಹ್ನೆಗಳು': 'blue', '"ಸುಂದರ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 28
+        solution: { 'ಕರ್ನಾಟಕದ ಜಿಲ್ಲೆಗಳು': ['ಬೆಂಗಳೂರು', 'ಮಂಡ್ಯ', 'ಶಿವಮೊಗ್ಗ', 'ಬೆಳಗಾವಿ'], 'ಶಿಕ್ಷಣಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': ['ಪರೀಕ್ಷೆ', 'ವಿದ್ಯಾರ್ಥಿ', 'ಪಠ್ಯ', 'ಶುಲ್ಕ'], 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ನಾಟಕಕಾರರು': ['ಟಿ.ಪಿ.ಕೈಲಾಸಂ', 'ಗಿರೀಶ ಕಾರ್ನಾಡ', 'ಸಂಸ', 'ಚಂದ್ರಶೇಖರ ಕಂಬಾರ'], '"ದುಃಖ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ಖೇದ', 'ಶೋಕ', 'ವೇದನೆ', 'ನೋವು'] },
+        difficulty: { 'ಕರ್ನಾಟಕದ ಜಿಲ್ಲೆಗಳು': 'yellow', 'ಶಿಕ್ಷಣಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': 'green', 'ಕನ್ನಡದ ಪ್ರಸಿದ್ಧ ನಾಟಕಕಾರರು': 'blue', '"ದುಃಖ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 29
+        solution: { 'ವೈಜ್ಞಾನಿಕ ಕ್ಷೇತ್ರಗಳು': ['ಭೌತಶಾಸ್ತ್ರ', 'ರಸಾಯನಶಾಸ್ತ್ರ', 'ಜೀವಶಾಸ್ತ್ರ', 'ಗಣಿತ'], 'ಅಂತರಿಕ್ಷಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': ['ಗ್ರಹ', 'ನಕ್ಷತ್ರ', 'ಉಪಗ್ರಹ', 'ಬಾಹ್ಯಾಕಾಶ'], 'ಕನ್ನಡ ವ್ಯಾಕರಣದ ಅಂಶಗಳು': ['ನಾಮಪದ', 'ಕ್ರಿಯಾಪದ', 'ವಿಶೇಷಣ', 'ಸರ್ವನಾಮ'], 'ಕನ್ನಡದ ಜನಪದ ಕಲೆಗಳು': ['ಡೊಳ್ಳು ಕುಣಿತ', 'ಕಂಸಾಳೆ', 'ವೀರಗಾಸೆ', 'ಪೂಜಾ ಕುಣಿತ'] },
+        difficulty: { 'ವೈಜ್ಞಾನಿಕ ಕ್ಷೇತ್ರಗಳು': 'yellow', 'ಅಂತರಿಕ್ಷಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': 'green', 'ಕನ್ನಡ ವ್ಯಾಕರಣದ ಅಂಶಗಳು': 'blue', 'ಕನ್ನಡದ ಜನಪದ ಕಲೆಗಳು': 'purple' }
+    },
+    { // Puzzle 30
+        solution: { 'ರಾಶಿಗಳು': ['ಮೇಷ', 'ವೃಷಭ', 'ಮಿಥುನ', 'ಕರ್ಕ'], 'ರಾಜಕೀಯ ಸ್ಥಾನಗಳು': ['ಮುಖ್ಯಮಂತ್ರಿ', 'ಪ್ರಧಾನಮಂತ್ರಿ', 'ರಾಷ್ಟ್ರಪತಿ', 'ರಾಜ್ಯಪಾಲ'], 'ಕನ್ನಡದ ಉಪಭಾಷೆಗಳು': ['ಧಾರವಾಡ', 'ಮಂಗಳೂರು', 'ಮೈಸೂರು', 'ಗುಲ್ಬರ್ಗ'], '"ಜ್ಞಾನ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ತಿಳುವಳಿಕೆ', 'ಅರಿವು', 'ಪ್ರಜ್ಞೆ', 'ವಿದ್ಯೆ'] },
+        difficulty: { 'ರಾಶಿಗಳು': 'yellow', 'ರಾಜಕೀಯ ಸ್ಥಾನಗಳು': 'green', 'ಕನ್ನಡದ ಉಪಭಾಷೆಗಳು': 'blue', '"ಜ್ಞಾನ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    },
+    { // Puzzle 31
+        solution: { 'ಸಪ್ತಸ್ವರಗಳು': ['ಸ', 'ರಿ', 'ಗ', 'ಮ'], 'ನಾಟಕೀಯ ಭಾವಗಳು': ['ವಿಸ್ಮಯ', 'ಭಯ', 'ಬೀಭತ್ಸ', 'ಶಾಂತ'], 'ಕರ್ನಾಟಕದ ಪಕ್ಷಿಧಾಮಗಳು': ['ರಂಗನತಿಟ್ಟು', 'ಕೊಕ್ಕರೆಬೆಳ್ಳೂರು', 'ಗುಡವಿ', 'ಮಂಡಗದ್ದೆ'], '"ರಾತ್ರಿ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': ['ನಿಶೆ', 'ರಜನಿ', 'ಯಾಮಿನಿ', 'ಇರುಳು'] },
+        difficulty: { 'ಸಪ್ತಸ್ವರಗಳು': 'yellow', 'ನಾಟಕೀಯ ಭಾವಗಳು': 'green', 'ಕರ್ನಾಟಕದ ಪಕ್ಷಿಧಾಮಗಳು': 'blue', '"ರಾತ್ರಿ" ಪದದ ಸಮಾನಾರ್ಥಕಗಳು': 'purple' }
+    }
+];
+// --- END: ONE-MONTH+ PUZZLE LIBRARY ---
+
+let currentPuzzle;
+let words;
+let selectedWords = [];
+let mistakesLeft = 4;
+const MAX_MISTAKES = 4;
+let foundGroupsOrder = [];
+let gameActive = true;
+
+const gridContainer = document.getElementById('grid-container');
+const submitButton = document.getElementById('submit-button');
+const shuffleButton = document.getElementById('shuffle-button');
+const deselectAllButton = document.getElementById('deselect-all-button');
+const messageEl = document.getElementById('message');
+const mistakesDots = document.querySelectorAll('.mistake-dot');
+const foundGroupsContainer = document.getElementById('found-groups-container');
+const gameOverScreen = document.getElementById('game-over-screen');
+const gameOverTitle = document.getElementById('game-over-title');
+const gameOverMessage = document.getElementById('game-over-message');
+const solutionDisplay = document.getElementById('solution-display');
+const playAgainButton = document.getElementById('play-again-button');
+
+function getDailyPuzzleIndex() {
+    const startDate = new Date('2024-01-01');
+    const today = new Date();
+    const diffTime = Math.abs(today - startDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays % puzzles.length;
+}
+
+function initGame() {
+    gameActive = true;
+    const puzzleIndex = getDailyPuzzleIndex();
+    currentPuzzle = puzzles[puzzleIndex];
+    words = Object.values(currentPuzzle.solution).flat();
+    const daySeed = new Date().toDateString();
+    shuffle(words, daySeed);
+
+    mistakesLeft = MAX_MISTAKES;
+    foundGroupsOrder = [];
+    selectedWords = [];
+    
+    messageEl.textContent = '';
+    foundGroupsContainer.innerHTML = '';
+    gameOverScreen.style.display = 'none';
+    
+    updateMistakesDisplay();
+    renderGrid();
+    
+    submitButton.disabled = true;
+    shuffleButton.disabled = false;
+    deselectAllButton.disabled = false;
+}
+
+function renderGrid() {
+    gridContainer.innerHTML = '';
+    displayFoundGroups();
+    const remainingWords = words.filter(word => !isWordFound(word));
+
+    remainingWords.forEach(word => {
+        const item = document.createElement('div');
+        item.textContent = word;
+        item.classList.add('grid-item');
+        item.dataset.word = word;
+        item.addEventListener('click', () => selectWord(item));
+        gridContainer.appendChild(item);
+    });
+}
+
+function displayFoundGroups() {
+    foundGroupsContainer.innerHTML = '';
+    const sortedFoundGroups = foundGroupsOrder.slice().sort((a, b) => {
+        const difficulties = ['yellow', 'green', 'blue', 'purple'];
+        return difficulties.indexOf(currentPuzzle.difficulty[a]) - difficulties.indexOf(currentPuzzle.difficulty[b]);
+    });
+    
+    sortedFoundGroups.forEach(groupName => {
+        foundGroupsContainer.appendChild(createFoundGroupElement(groupName));
+    });
+}
+
+function isWordFound(word) {
+    return foundGroupsOrder.some(groupName => currentPuzzle.solution[groupName].includes(word));
+}
+
+function selectWord(item) {
+    if (!gameActive || item.classList.contains('found')) return;
+    item.classList.toggle('selected');
+    
+    if (item.classList.contains('selected')) {
+        selectedWords.push(item.dataset.word);
+    } else {
+        selectedWords = selectedWords.filter(w => w !== item.dataset.word);
+    }
+    
+    if (selectedWords.length > 4) {
+        const firstSelectedWord = selectedWords.shift();
+        const firstSelectedItem = gridContainer.querySelector(`.grid-item[data-word="${firstSelectedWord}"]`);
+        if (firstSelectedItem) firstSelectedItem.classList.remove('selected');
+    }
+
+    submitButton.disabled = selectedWords.length !== 4;
+}
+
+function deselectAll() {
+    selectedWords = [];
+    document.querySelectorAll('.grid-item.selected').forEach(item => item.classList.remove('selected'));
+    submitButton.disabled = true;
+}
+
+function handleSubmit() {
+    if (selectedWords.length !== 4) return;
+
+    let correctGroupName = null;
+    for (const groupName in currentPuzzle.solution) {
+        const groupWords = currentPuzzle.solution[groupName];
+        if (selectedWords.every(word => groupWords.includes(word)) && selectedWords.length === groupWords.length) {
+            correctGroupName = groupName;
+            break;
+        }
+    }
+
+    if (correctGroupName) {
+        if (foundGroupsOrder.includes(correctGroupName)) {
+            messageEl.textContent = 'ಈ ಗುಂಪನ್ನು ಈಗಾಗಲೇ ಕಂಡುಹಿಡಿಯಲಾಗಿದೆ!';
+            deselectAll();
+        } else {
+            handleCorrectGuess(correctGroupName);
+        }
+    } else {
+        let isOneAway = false;
+        for (const groupName in currentPuzzle.solution) {
+            if (foundGroupsOrder.includes(groupName)) continue;
+            const groupWords = currentPuzzle.solution[groupName];
+            const correctWordsInSelection = selectedWords.filter(word => groupWords.includes(word));
+            if (correctWordsInSelection.length === 3) {
+                isOneAway = true;
+                break;
+            }
+        }
+        handleIncorrectGuess(isOneAway);
+    }
+}
+
+function handleCorrectGuess(groupName) {
+    messageEl.textContent = 'ಅದ್ಭುತ!';
+    foundGroupsOrder.push(groupName);
+
+    const groupWords = currentPuzzle.solution[groupName];
+    document.querySelectorAll('.grid-item.selected').forEach(item => {
+        item.classList.remove('selected');
+        item.classList.add('found'); // Visually remove them from play
+    });
+
+    displayFoundGroups();
+    
+    // Clear and re-render grid to physically separate groups
+    gridContainer.innerHTML = '';
+    const remainingWords = words.filter(word => !isWordFound(word));
+    remainingWords.forEach(word => {
+        const item = document.createElement('div');
+        item.textContent = word;
+        item.classList.add('grid-item');
+        item.dataset.word = word;
+        item.addEventListener('click', () => selectWord(item));
+        gridContainer.appendChild(item);
+    });
+    
+    deselectAll();
+    
+    if (foundGroupsOrder.length === 4) {
+        endGame(true);
+    }
+}
+
+function createFoundGroupElement(groupName, wordsArray) {
+    const words = wordsArray || currentPuzzle.solution[groupName];
+    const groupColorClass = `correct-group-${currentPuzzle.difficulty[groupName]}`;
+    const foundGroupEl = document.createElement('div');
+    foundGroupEl.classList.add('found-group', groupColorClass);
+    const groupTitle = document.createElement('h3');
+    groupTitle.textContent = groupName;
+    const groupWordsP = document.createElement('p');
+    groupWordsP.textContent = words.join(', ');
+    foundGroupEl.appendChild(groupTitle);
+    foundGroupEl.appendChild(groupWordsP);
+    return foundGroupEl;
+}
+
+function handleIncorrectGuess(isOneAway = false) {
+    mistakesLeft--;
+    updateMistakesDisplay();
+    
+    messageEl.textContent = isOneAway ? "ಒಂದು ದೂರದಲ್ಲಿ..." : 'ಕ್ಷಮಿಸಿ, ಅದು ಸರಿಯಲ್ಲ.';
+
+    const selectedItems = document.querySelectorAll('.grid-item.selected');
+    selectedItems.forEach(item => {
+        item.classList.add('shake');
+        setTimeout(() => item.classList.remove('shake'), 400);
+    });
+
+    if (mistakesLeft === 0) {
+        endGame(false);
+    }
+}
+
+function updateMistakesDisplay() {
+    mistakesDots.forEach((dot, index) => {
+        dot.classList.toggle('lost', index >= MAX_MISTAKES - mistakesLeft);
+    });
+}
+
+function shuffleGrid() {
+    if (!gameActive) return;
+    const gridItems = Array.from(gridContainer.children);
+    const daySeed = new Date().toDateString() + " " + gridItems.length; // Create a new seed for shuffle
+    shuffle(gridItems, daySeed);
+    gridItems.forEach(item => gridContainer.appendChild(item));
+    deselectAll();
+}
+
+function endGame(isWin) {
+    gameActive = false;
+    submitButton.disabled = true;
+    
+    setTimeout(() => {
+        solutionDisplay.innerHTML = '';
+        if (isWin) {
+            gameOverTitle.textContent = 'ಅಭಿನಂದನೆಗಳು!';
+            gameOverMessage.textContent = 'ನೀವು ಇಂದಿನ ಸಂಪರ್ಕಗಳನ್ನು ಕಂಡುಕೊಂಡಿದ್ದೀರಿ!';
+        } else {
+            gameOverTitle.textContent = 'ಆಟ ಮುಗಿಯಿತು';
+            gameOverMessage.textContent = 'ಇಂದಿನ ಸರಿಯಾದ ಉತ್ತರಗಳು ಇಲ್ಲಿವೆ:';
+            const difficulties = ['yellow', 'green', 'blue', 'purple'];
+            const sortedGroupNames = Object.keys(currentPuzzle.solution).sort((a,b) => {
+                return difficulties.indexOf(currentPuzzle.difficulty[a]) - difficulties.indexOf(currentPuzzle.difficulty[b]);
+            });
+            sortedGroupNames.forEach(groupName => {
+                solutionDisplay.appendChild(createFoundGroupElement(groupName));
+            });
+        }
+        gameOverScreen.style.display = 'flex';
+    }, 1000);
+}
+
+function shuffle(array, seed) {
+    let a = 1;
+    for (let i = 0; i < seed.length; i++) {
+        a = (a + seed.charCodeAt(i)) * 17;
+    }
+    let t;
+    for (let i = array.length - 1; i > 0; i--) {
+        a = (a ^ 61) ^ (a >>> 16);
+        a = a + (a << 3);
+        a = a ^ (a >>> 4);
+        a = Math.imul(a, 668265261);
+        a = a ^ (a >>> 15);
+        const j = Math.abs(a) % (i + 1);
+        t = array[i];
+        array[i] = array[j];
+        array[j] = t;
+    }
+    return array;
+}
+
+// Event Listeners
+shuffleButton.addEventListener('click', shuffleGrid);
+deselectAllButton.addEventListener('click', deselectAll);
+submitButton.addEventListener('click', handleSubmit);
+playAgainButton.addEventListener('click', initGame);
+
+// Start the game
+initGame();
+</script>
+
+</body>
+</html>

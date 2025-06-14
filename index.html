@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ದೈನಂದಿನ ಕನ್ನಡ ಕನೆಕ್ಷನ್ಸ್</title>
+    <style>
+        /* The CSS is the same as before, no changes needed */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&display=swap');
+        :root { --background-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-border: #444; --selected-bg: #004d40; --button-bg: #00796b; --button-hover-bg: #004d40; --button-text: #ffffff; --error-color: #cf6679; --disabled-bg: #444; --correct-yellow: #fdd835; --correct-green: #7cb342; --correct-blue: #0288d1; --correct-purple: #8e24aa; --correct-text: #121212; }
+        body { font-family: 'Noto Sans Kannada', sans-serif; background-color: var(--background-color); color: var(--text-color); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
+        #game-container { width: 100%; max-width: 500px; text-align: center; }
+        h1 { font-size: 2.2rem; font-weight: 700; color: var(--button-bg); margin-bottom: 0.5rem; }
+        #visitor-counter { margin-bottom: 1rem; opacity: 0.9; }
+        #instructions { font-size: 1rem; margin-bottom: 1.5rem; color: #aaa; }
+        #found-groups-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+        .found-group { border-radius: 8px; padding: 1rem; text-align: center; animation: fadeIn 0.5s ease-in-out; color: var(--correct-text); }
+        .found-group h3 { margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 700; }
+        .found-group p { margin: 0; font-size: 1rem; font-weight: 400; }
+        #grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+        .grid-item { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s, transform 0.2s; display: flex; justify-content: center; align-items: center; min-height: 65px; -webkit-tap-highlight-color: transparent; }
+        .grid-item.selected { background-color: var(--selected-bg); transform: scale(1.05); border-color: var(--button-bg); }
+        .grid-item.shake { animation: shake 0.4s; }
+        .correct-group-yellow { background-color: var(--correct-yellow); } .correct-group-green { background-color: var(--correct-green); } .correct-group-blue { background-color: var(--correct-blue); } .correct-group-purple { background-color: var(--correct-purple); }
+        #controls { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
+        button { background-color: var(--button-bg); color: var(--button-text); border: none; padding: 12px 24px; font-size: 1rem; font-family: 'Noto Sans Kannada', sans-serif; font-weight: 700; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover:not(:disabled) { background-color: var(--button-hover-bg); }
+        button:disabled { background-color: var(--disabled-bg); color: #888; cursor: not-allowed; }
+        #mistakes-container { margin-bottom: 1.5rem; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 27px; }
+        .mistake-dot { height: 18px; width: 18px; background-color: var(--card-border); border-radius: 50%; display: inline-block; transition: background-color 0.3s; }
+        .mistake-dot.lost { background-color: var(--error-color); }
+        #message { margin-top: 1rem; font-size: 1.1rem; min-height: 1.5rem; font-weight: bold; color: #eee; }
+        #game-over-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; flex-direction: column; text-align: center; z-index: 100; animation: fadeIn 0.5s; overflow-y: auto; padding: 1rem; box-sizing: border-box; }
+        #game-over-box { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; border: 1px solid var(--card-border); width: 100%; max-width: 500px; }
+        #game-over-box h2 { font-size: 2rem; margin-bottom: 1rem; }
+        #solution-display { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+        #game-over-box button { margin-top: 1.5rem; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @media (max-width: 600px) { body { align-items: flex-start; } h1 { font-size: 2rem; } .grid-item { min-height: 60px; font-size: 1rem; } #game-over-box { padding: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>ದೈನಂದಿನ ಕನ್ನಡ ಕನೆಕ್ಷನ್ಸ್</h1>
+    <div id="visitor-counter">
+        <img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Fshreyasd2006.github.io%2Fkannada-connections%2F&label=Users&icon=github&color=%23198754">
+    </div>
+
+    <p id="instructions">ಒಂದು ಗುಂಪನ್ನು ರೂಪಿಸುವ ನಾಲ್ಕು ಪದಗಳನ್ನು ಹುಡುಕಿ.</p>
+    
+    <div id="found-groups-container"></div>
+    <div id="grid-container"></div>
+    
+    <div id="message"></div>
+    
+    <div id="mistakes-container"></div>
+    <div id="controls"></div>
+</div>
+
+<div id="game-over-screen">
+    <div id="game-over-box">
+        <h2 id="game-over-title"></h2>
+        <p id="game-over-message"></p>
+        <div id="solution-display"></div>
+        <button id="play-again-button">ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ</button>
+    </div>
+</div>
+
+<script>
+// --- START: NEW, EXTREMELY DIFFICULT PUZZLE LIBRARY ---
+const puzzles = [
+    { // Puzzle 1
+        solution: {
+            'ಅಡುಗೆಯಲ್ಲಿ ಬಳಸುವ ಹುಳಿಗಳು': ['ಹುಣಸೆ', 'ನಿಂಬೆ', 'ಮಾವಿನಕಾಯಿ', 'ಟೊಮೇಟೊ'],
+            'ಗಾದೆ: ____ ಇಲ್ಲದೆ ಹೊಗೆಯಾಡುವುದಿಲ್ಲ': ['ಬೆಂಕಿ', 'ಕಾರಣ', 'ಗಾಳಿ', 'ನಿಜ'], // Tricky: Only 'ಬೆಂಕಿ' is the original word, others are abstract fits
+            'ಕನ್ನಡ ಸಮಾಸಗಳು (Compound Words)': ['ಅರಮನೆ', 'ಕೆರೆಕಟ್ಟೆ', 'ಕೈಮಗ್ಗ', 'ಮಳೆಗಾಲ'],
+            'ಶಿವನ ಹೆಸರುಗಳು': ['ಗಂಗಾಧರ', 'ನೀಲಕಂಠ', 'ಮೃತ್ಯುಂಜಯ', 'ಚಂದ್ರಶೇಖರ']
+        },
+        difficulty: {'ಅಡುಗೆಯಲ್ಲಿ ಬಳಸುವ ಹುಳಿಗಳು':'yellow', 'ಕನ್ನಡ ಸಮಾಸಗಳು':'green', 'ಶಿವನ ಹೆಸರುಗಳು':'blue', 'ಗಾದೆ: ____ ಇಲ್ಲದೆ ಹೊಗೆಯಾಡುವುದಿಲ್ಲ':'purple'}
+    },
+    { // Puzzle 2
+        solution: {
+            'ದೇಹದ ವಿಸರ್ಜನಾಂಗಗಳು': ['ಚರ್ಮ', 'ಶ್ವಾಸಕೋಶ', 'ಮೂತ್ರಪಿಂಡ', 'ಕರುಳು'],
+            'ಕಾಗದದ ಅಳತೆಗಳು': ['ರೀಮ್', 'ದಸ್ತ', 'ಗ್ಯಾಲನ್', 'ಕ್ವೈರ್'], // Tricky: Gallon is a red herring
+            'ಖಾಲಿ ಅಥವಾ ಶೂನ್ಯಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': ['ಬಯಲು', 'ರಿಕ್ತ', 'ನಿರ್ಜನ', 'ಅಭಾವ'],
+            'ಕುವೆಂಪುರವರ ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು': ['ನಾಯಿ ಗುತ್ತಿ', 'ತಿಮ್ಮಿ', 'ಪೀಂಚಲು', 'ಸುಬ್ಬಣ್ಣ'] // Requires specific literary knowledge
+        },
+        difficulty: {'ದೇಹದ ವಿಸರ್ಜನಾಂಗಗಳು':'yellow', 'ಕಾಗದದ ಅಳತೆಗಳು':'green', 'ಖಾಲಿ ಅಥವಾ ಶೂನ್ಯಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು':'blue', 'ಕುವೆಂಪುರವರ ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು':'purple'}
+    },
+    { // Puzzle 3
+        solution: {
+            'ಕರ್ನಾಟಕದ ರಾಜಮನೆತನಗಳು': ['ಗಂಗ', 'ಕದಂಬ', 'ಚಾಲುಕ್ಯ', 'ರಾಷ್ಟ್ರಕೂಟ'],
+            'ಬರವಣಿಗೆಯ ಹಂತಗಳು': ['ಕರಡು', 'ಪರಿಷ್ಕರಣೆ', 'ಅಂತಿಮಗೊಳಿಸುವಿಕೆ', 'ಮುದ್ರಣ'],
+            'ವಿವಿಧ ರೀತಿಯ "ನೋಟ"ಗಳು': ['ಅಡ್ಡನೋಟ', 'ಕೊನೆನೋಟ', 'ಒಳನೋಟ', 'ಮುನ್ನೋಟ'],
+            'ಅಡುಗೆಯಲ್ಲಿ "ಒಗ್ಗರಣೆ"ಗೆ ಬಳಸುವ ಸಾಮಗ್ರಿಗಳು': ['ಸಾಸಿವೆ', 'ಜೀರಿಗೆ', 'ಕರಿಬೇವು', 'ಇಂಗು']
+        },
+        difficulty: {'ಅಡುಗೆಯಲ್ಲಿ "ಒಗ್ಗರಣೆ"ಗೆ ಬಳಸುವ ಸಾಮಗ್ರಿಗಳು':'yellow', 'ಕರ್ನಾಟಕದ ರಾಜಮನೆತನಗಳು':'green', 'ಬರವಣಿಗೆಯ ಹಂತಗಳು':'blue', 'ವಿವಿಧ ರೀತಿಯ "ನೋಟ"ಗಳು':'purple'}
+    },
+    { // Puzzle 4
+        solution: {
+            'ಗಣಿತದ ಪರಿಕಲ್ಪನೆಗಳು': ['ಅವಿಭಾಜ್ಯ', 'ಪೂರ್ಣಾಂಕ', 'ಭಿನ್ನರಾಶಿ', 'ದಶಮಾಂಶ'],
+            '"ಅಡಿ" ಪದದ ನಾನಾರ್ಥಗಳು': ['ಪಾದ', 'ಅಳತೆ', 'ಕೆಳಗೆ', 'ಪದ್ಯ'], // Homonyms
+            'ಮಲೆನಾಡಿನ ವಿಶಿಷ್ಟತೆಗಳು': ['ಅಡಿಕೆ', 'ಕಾಳುಮೆಣಸು', 'ಏಲಕ್ಕಿ', 'ಭತ್ತ'],
+            'ಬೇಂದ್ರೆಯವರ ಕಾವ್ಯದ ಪದಗಳು': ['ನಾದ', 'ಗರಿ', 'ಸಖೀಗೀತ', 'ಭಾವ'] // Specific poet's vocabulary
+        },
+        difficulty: {'ಗಣಿತದ ಪರಿಕಲ್ಪನೆಗಳು':'yellow', 'ಮಲೆನಾಡಿನ ವಿಶಿಷ್ಟತೆಗಳು':'green', '"ಅಡಿ" ಪದದ ನಾನಾರ್ಥಗಳು':'blue', 'ಬೇಂದ್ರೆಯವರ ಕಾವ್ಯದ ಪದಗಳು':'purple'}
+    },
+    { // Puzzle 5
+        solution: {
+            'ದಕ್ಷಿಣ ಭಾರತದ ತಿಂಡಿಗಳು': ['ಪುಳಿಯೋಗರೆ', 'ಬಿಸಿಬೇಳೆಭಾತ್', 'ಚಿತ್ರಾನ್ನ', 'ಮೊಸರನ್ನ'],
+            'ಕನ್ನಡದಲ್ಲಿ "ಅ" ಉಪಸರ್ಗದ ಪದಗಳು': ['ಅನ್ಯಾಯ', 'ಅಸಾಧ್ಯ', 'ಅಪೂರ್ಣ', 'ಅಸಹಜ'], // Linguistic theme
+            'ಆಡಳಿತಾತ್ಮಕ ವಿಭಾಗಗಳು': ['ತಾಲೂಕು', 'ಜಿಲ್ಲೆ', 'ವಿಭಾಗ', 'ರಾಜ್ಯ'],
+            'ಕಣ್ಣಿಗೆ ಕಾಣದ ವಿಷಯಗಳು': ['ಕಲ್ಪನೆ', 'ಭಾವನೆ', 'ಯೋಚನೆ', 'ಜ್ಞಾಪಕ']
+        },
+        difficulty: {'ದಕ್ಷಿಣ ಭಾರತದ ತಿಂಡಿಗಳು':'yellow', 'ಆಡಳಿತಾತ್ಮಕ ವಿಭಾಗಗಳು':'green', 'ಕಣ್ಣಿಗೆ ಕಾಣದ ವಿಷಯಗಳು':'blue', 'ಕನ್ನಡದಲ್ಲಿ "ಅ" ಉಪಸರ್ಗದ ಪದಗಳು':'purple'}
+    },
+    { // Puzzle 6
+        solution: {
+            'ನವಗ್ರಹಗಳು': ['ಸೂರ್ಯ', 'ಚಂದ್ರ', 'ಮಂಗಳ', 'ಬುಧ'],
+            'ವಿವಿಧ ಬಗೆಯ "ದಾರಿ"ಗಳು': ['ರಾಜಮಾರ್ಗ', 'ಎಡವಟ್ಟು', 'ಜೀವನೋಪಾಯ', 'ಅಡ್ಡದಾರಿ'], // Figurative meanings
+            'ಯುದ್ಧಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': ['ಕದನ', 'ಸಮರ', 'ಆಹವ', 'ಸಂಗ್ರಾಮ'],
+            'ಹಲ್ಮಿಡಿ ಶಾಸನದಲ್ಲಿ ಸಿಗುವ ಪದಗಳು': ['ನರಿದಾವಿಳೆ', 'ಕದಂಬನ್', 'ಪಶುಪತಿ', 'ಬಟಾರಿ'] // Extremely specific historical knowledge
+        },
+        difficulty: {'ನವಗ್ರಹಗಳು':'yellow', 'ಯುದ್ಧಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು':'green', 'ವಿವಿಧ ಬಗೆಯ "ದಾರಿ"ಗಳು':'blue', 'ಹಲ್ಮಿಡಿ ಶಾಸನದಲ್ಲಿ ಸಿಗುವ ಪದಗಳು':'purple'}
+    },
+    { // Puzzle 7
+        solution: {
+            'ಷಡ್ರಸಗಳು (ಆರು ರುಚಿಗಳು)': ['ಮಧುರ', 'ಆಮ್ಲ', 'ಲವಣ', 'ಕಟು'],
+            'ಗಾದೆ: ಕುಂಬಾರನಿಗೆ ವರುಷ, ____ ನಿಮಿಷ': ['ದೊಣ್ಣೆಗೆ', 'ಕಲ್ಲಿಗೆ', 'ಕೋಲಿಗೆ', 'ಬಡಿಗೆಗೆ'], // Fill in the blank proverb
+            'ಜಾನಪದ ಸಂಗೀತ ವಾದ್ಯಗಳು': ['ತಮಟೆ', 'ನಗಾರಿ', 'ಚೌಡಿಕೆ', 'ಕಿನ್ನರಿ'],
+            'ವಸ್ತುಗಳ ಭೌತಿಕ ಸ್ಥಿತಿಗಳು': ['ಘನ', 'ದ್ರವ', 'ಅನಿಲ', 'ಪ್ಲಾಸ್ಮಾ']
+        },
+        difficulty: {'ವಸ್ತುಗಳ ಭೌತಿಕ ಸ್ಥಿತಿಗಳು':'yellow', 'ಷಡ್ರಸಗಳು (ಆರು ರುಚಿಗಳು)':'green', 'ಜಾನಪದ ಸಂಗೀತ ವಾದ್ಯಗಳು':'blue', 'ಗಾದೆ: ಕುಂಬಾರನಿಗೆ ವರುಷ, ____ ನಿಮಿಷ':'purple'}
+    }
+    // Add more extremely difficult puzzles here to expand the library
+];
+// --- END: NEW PUZZLE LIBRARY ---
+
+
+// --- JAVASCRIPT LOGIC ---
+// This section includes the new "Show Solution on Replay" logic.
+let currentPuzzle;let words;let selectedWords=[];let mistakesLeft=4;const MAX_MISTAKES=4;let foundGroupsOrder=[];let gameActive=true;const gridContainer=document.getElementById('grid-container');const messageEl=document.getElementById('message');const mistakesContainer=document.getElementById('mistakes-container');const controlsContainer=document.getElementById('controls');const foundGroupsContainer=document.getElementById('found-groups-container');const gameOverScreen=document.getElementById('game-over-screen');const gameOverTitle=document.getElementById('game-over-title');const gameOverMessage=document.getElementById('game-over-message');const solutionDisplay=document.getElementById('solution-display');const playAgainButton=document.getElementById('play-again-button');function getTodayKey(){const today=new Date;return today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate()}
+function getDailyPuzzleIndex(){const startDate=new Date('2024-01-01');const today=new Date;const diffTime=Math.abs(today-startDate);const diffDays=Math.floor(diffTime/(1000*60*60*24));return diffDays%puzzles.length}
+function initGame(){const todayKey='kannadaConnections_'+getTodayKey();const savedState=localStorage.getItem(todayKey);if(savedState){const result=JSON.parse(savedState);showSolutionScreen(result);return}setupNewGame()}
+function setupNewGame(){gameActive=true;const puzzleIndex=getDailyPuzzleIndex();currentPuzzle=puzzles[puzzleIndex];words=Object.values(currentPuzzle.solution).flat();const daySeed=new Date().toDateString();shuffle(words,daySeed);mistakesLeft=MAX_MISTAKES;foundGroupsOrder=[];selectedWords=[];messageEl.textContent='';foundGroupsContainer.innerHTML='';gameOverScreen.style.display='none';showGameUI();updateMistakesDisplay();renderGrid()}
+
+// --- MODIFIED FUNCTION: Shows the full solution if already played ---
+function showSolutionScreen(result) {
+    gridContainer.innerHTML = ''; // Clear the grid
+    foundGroupsContainer.innerHTML = ''; // Clear previous results
+    messageEl.textContent = 'ನೀವು ಇಂದಿನ ಆಟವನ್ನು ಈಗಾಗಲೇ ಆಡಿದ್ದೀರಿ. ಇಲ್ಲಿದೆ ಇಂದಿನ ಪರಿಹಾರ:';
+    
+    // Get the correct puzzle for the day using the saved index
+    const correctPuzzle = puzzles[result.puzzleIndex];
+    const difficulties = ['yellow', 'green', 'blue', 'purple'];
+    const sortedGroupNames = Object.keys(correctPuzzle.solution).sort((a,b) => {
+        return difficulties.indexOf(correctPuzzle.difficulty[a]) - difficulties.indexOf(correctPuzzle.difficulty[b]);
+    });
+
+    // Display the full solution
+    sortedGroupNames.forEach(groupName => {
+        foundGroupsContainer.appendChild(createFoundGroupElement(groupName, correctPuzzle.solution[groupName], correctPuzzle));
+    });
+    
+    mistakesContainer.innerHTML = ''; // Hide mistakes container
+    controlsContainer.innerHTML = ''; // Hide controls
+}
+
+function showGameUI(){mistakesContainer.innerHTML=`<span>ತಪ್ಪುಗಳು ಉಳಿದಿವೆ:</span>
+<div class="mistake-dot"></div><div class="mistake-dot"></div>
+<div class="mistake-dot"></div><div class="mistake-dot"></div>`;controlsContainer.innerHTML=`<button id="shuffle-button">ಬದಲಾಯಿಸು</button>
+<button id="deselect-all-button">ಎಲ್ಲವನ್ನೂ ಅಳಿಸು</button>
+<button id="submit-button" disabled>ಸಲ್ಲಿಸು</button>`;document.getElementById('shuffle-button').addEventListener('click',shuffleGrid);document.getElementById('deselect-all-button').addEventListener('click',deselectAll);document.getElementById('submit-button').addEventListener('click',handleSubmit)}
+function endGame(isWin){gameActive=false;document.getElementById('submit-button').disabled=true;const todayKey='kannadaConnections_'+getTodayKey();const resultToSave={puzzleIndex:getDailyPuzzleIndex()};localStorage.setItem(todayKey,JSON.stringify(resultToSave));setTimeout(()=>{solutionDisplay.innerHTML='';if(isWin){gameOverTitle.textContent='ಅಭಿನಂದನೆಗಳು!';gameOverMessage.textContent='ನೀವು ಇಂದಿನ ಸಂಪರ್ಕಗಳನ್ನು ಕಂಡುಕೊಂಡಿದ್ದೀರಿ!'}else{gameOverTitle.textContent='ಆಟ ಮುಗಿಯಿತು';gameOverMessage.textContent='ಇಂದಿನ ಸರಿಯಾದ ಉತ್ತರಗಳು ಇಲ್ಲಿವೆ:';const difficulties=['yellow','green','blue','purple'];const sortedGroupNames=Object.keys(currentPuzzle.solution).sort((a,b)=>{return difficulties.indexOf(currentPuzzle.difficulty[a])-difficulties.indexOf(currentPuzzle.difficulty[b])});sortedGroupNames.forEach(groupName=>{solutionDisplay.appendChild(createFoundGroupElement(groupName))})}gameOverScreen.style.display='flex'},1000)}
+function renderGrid(){gridContainer.innerHTML='';displayFoundGroups();const remainingWords=words.filter(word=>!isWordFound(word));remainingWords.forEach(word=>{const item=document.createElement('div');item.textContent=word;item.classList.add('grid-item');item.dataset.word=word;item.addEventListener('click',()=>selectWord(item));gridContainer.appendChild(item)})}
+function displayFoundGroups(){foundGroupsContainer.innerHTML='';const sortedFoundGroups=foundGroupsOrder.slice().sort((a,b)=>{const difficulties=['yellow','green','blue','purple'];return difficulties.indexOf(currentPuzzle.difficulty[a])-difficulties.indexOf(currentPuzzle.difficulty[b])});sortedFoundGroups.forEach(groupName=>{foundGroupsContainer.appendChild(createFoundGroupElement(groupName))})}
+function isWordFound(word){return foundGroupsOrder.some(groupName=>currentPuzzle.solution[groupName].includes(word))}
+function selectWord(item){if(!gameActive||item.classList.contains('found'))return;item.classList.toggle('selected');if(item.classList.contains('selected')){selectedWords.push(item.dataset.word)}else{selectedWords=selectedWords.filter(w=>w!==item.dataset.word)}if(selectedWords.length>4){const firstSelectedWord=selectedWords.shift();const firstSelectedItem=gridContainer.querySelector(`.grid-item[data-word="${firstSelectedWord}"]`);if(firstSelectedItem)firstSelectedItem.classList.remove('selected')}document.getElementById('submit-button').disabled=selectedWords.length!==4}
+function deselectAll(){selectedWords=[];document.querySelectorAll('.grid-item.selected').forEach(item=>item.classList.remove('selected'));document.getElementById('submit-button').disabled=true}
+function handleSubmit(){if(selectedWords.length!==4)return;let correctGroupName=null;for(const groupName in currentPuzzle.solution){const groupWords=currentPuzzle.solution[groupName];if(selectedWords.every(word=>groupWords.includes(word))&&selectedWords.length===groupWords.length){correctGroupName=groupName;break}}if(correctGroupName){if(foundGroupsOrder.includes(correctGroupName)){messageEl.textContent='ಈ ಗುಂಪನ್ನು ಈಗಾಗಲೇ ಕಂಡುಹಿಡಿಯಲಾಗಿದೆ!';deselectAll()}else{handleCorrectGuess(correctGroupName)}}else{let isOneAway=false;for(const groupName in currentPuzzle.solution){if(foundGroupsOrder.includes(groupName))continue;const groupWords=currentPuzzle.solution[groupName];const correctWordsInSelection=selectedWords.filter(word=>groupWords.includes(word));if(correctWordsInSelection.length===3){isOneAway=true;break}}handleIncorrectGuess(isOneAway)}}
+function handleCorrectGuess(groupName){messageEl.textContent='ಅದ್ಭುತ!';foundGroupsOrder.push(groupName);document.querySelectorAll('.grid-item.selected').forEach(item=>{item.classList.remove('selected');item.classList.add('found')});displayFoundGroups();gridContainer.innerHTML='';const remainingWords=words.filter(w=>!isWordFound(w));remainingWords.forEach(word=>{const item=document.createElement('div');item.textContent=word;item.classList.add('grid-item');item.dataset.word=word;item.addEventListener('click',()=>selectWord(item));gridContainer.appendChild(item)});deselectAll();if(foundGroupsOrder.length===4){endGame(true)}}
+
+// --- MODIFIED FUNCTION: Now accepts the whole puzzle to find the difficulty color ---
+function createFoundGroupElement(groupName, wordsArray, puzzle = currentPuzzle){const words=wordsArray||puzzle.solution[groupName];const groupColorClass=`correct-group-${puzzle.difficulty[groupName]}`;const foundGroupEl=document.createElement('div');foundGroupEl.classList.add('found-group',groupColorClass);const groupTitle=document.createElement('h3');groupTitle.textContent=groupName;const groupWordsP=document.createElement('p');groupWordsP.textContent=words.join(', ');foundGroupEl.appendChild(groupTitle);foundGroupEl.appendChild(groupWordsP);return foundGroupEl}
+
+function handleIncorrectGuess(isOneAway=false){mistakesLeft--;updateMistakesDisplay();messageEl.textContent=isOneAway?"ಒಂದು ದೂರದಲ್ಲಿ...":'ಕ್ಷಮಿಸಿ, ಅದು ಸರಿಯಲ್ಲ.';const selectedItems=document.querySelectorAll('.grid-item.selected');selectedItems.forEach(item=>{item.classList.add('shake');setTimeout(()=>item.classList.remove('shake'),400)});if(mistakesLeft===0){endGame(false)}}
+function updateMistakesDisplay(){document.querySelectorAll('#mistakes-container .mistake-dot').forEach((dot,index)=>{dot.classList.toggle('lost',index>=MAX_MISTAKES-mistakesLeft)})}
+function shuffleGrid(){if(!gameActive)return;const gridItems=Array.from(gridContainer.children);const daySeed=new Date().toDateString()+" "+gridItems.length;shuffle(gridItems,daySeed);gridItems.forEach(item=>gridContainer.appendChild(item));deselectAll()}
+function shuffle(array,seed){let a=1;for(let i=0;i<seed.length;i++){a=(a+seed.charCodeAt(i))*17}let t;for(let i=array.length-1;i>0;i--){a=(a^61)^(a>>>16);a=a+(a<<3);a=a^(a>>>4);a=Math.imul(a,668265261);a=a^(a>>>15);const j=Math.abs(a)%(i+1);t=array[i];array[i]=array[j];array[j]=t}return array}
+playAgainButton.addEventListener('click', initGame);
+initGame();
+</script>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="kn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ದೈನಂದಿನ ಕನ್ನಡ ಕನೆಕ್ಷನ್ಸ್</title>
+    <style>
+        /* The CSS is the same as before, no changes needed */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&display=swap');
+        :root { --background-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-border: #444; --selected-bg: #004d40; --button-bg: #00796b; --button-hover-bg: #004d40; --button-text: #ffffff; --error-color: #cf6679; --disabled-bg: #444; --correct-yellow: #fdd835; --correct-green: #7cb342; --correct-blue: #0288d1; --correct-purple: #8e24aa; --correct-text: #121212; }
+        body { font-family: 'Noto Sans Kannada', sans-serif; background-color: var(--background-color); color: var(--text-color); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
+        #game-container { width: 100%; max-width: 500px; text-align: center; }
+        h1 { font-size: 2.2rem; font-weight: 700; color: var(--button-bg); margin-bottom: 0.5rem; }
+        #visitor-counter { margin-bottom: 1rem; opacity: 0.9; }
+        #instructions { font-size: 1rem; margin-bottom: 1.5rem; color: #aaa; }
+        #found-groups-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+        .found-group { border-radius: 8px; padding: 1rem; text-align: center; animation: fadeIn 0.5s ease-in-out; color: var(--correct-text); }
+        .found-group h3 { margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 700; }
+        .found-group p { margin: 0; font-size: 1rem; font-weight: 400; }
+        #grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+        .grid-item { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s, transform 0.2s; display: flex; justify-content: center; align-items: center; min-height: 65px; -webkit-tap-highlight-color: transparent; }
+        .grid-item.selected { background-color: var(--selected-bg); transform: scale(1.05); border-color: var(--button-bg); }
+        .grid-item.shake { animation: shake 0.4s; }
+        .correct-group-yellow { background-color: var(--correct-yellow); } .correct-group-green { background-color: var(--correct-green); } .correct-group-blue { background-color: var(--correct-blue); } .correct-group-purple { background-color: var(--correct-purple); }
+        #controls { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
+        button { background-color: var(--button-bg); color: var(--button-text); border: none; padding: 12px 24px; font-size: 1rem; font-family: 'Noto Sans Kannada', sans-serif; font-weight: 700; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover:not(:disabled) { background-color: var(--button-hover-bg); }
+        button:disabled { background-color: var(--disabled-bg); color: #888; cursor: not-allowed; }
+        #mistakes-container { margin-bottom: 1.5rem; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 27px; }
+        .mistake-dot { height: 18px; width: 18px; background-color: var(--card-border); border-radius: 50%; display: inline-block; transition: background-color 0.3s; }
+        .mistake-dot.lost { background-color: var(--error-color); }
+        #message { margin-top: 1rem; font-size: 1.1rem; min-height: 1.5rem; font-weight: bold; color: #eee; }
+        #game-over-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; flex-direction: column; text-align: center; z-index: 100; animation: fadeIn 0.5s; overflow-y: auto; padding: 1rem; box-sizing: border-box; }
+        #game-over-box { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; border: 1px solid var(--card-border); width: 100%; max-width: 500px; }
+        #game-over-box h2 { font-size: 2rem; margin-bottom: 1rem; }
+        #solution-display { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+        #game-over-box button { margin-top: 1.5rem; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @media (max-width: 600px) { body { align-items: flex-start; } h1 { font-size: 2rem; } .grid-item { min-height: 60px; font-size: 1rem; } #game-over-box { padding: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1>ದೈನಂದಿನ ಕನ್ನಡ ಕನೆಕ್ಷನ್ಸ್</h1>
+    <div id="visitor-counter">
+        <img src="https://hitscounter.dev/api/hit?url=https%3A%2F%2Fshreyasd2006.github.io%2Fkannada-connections%2F&label=Users&icon=github&color=%23198754">
+    </div>
+
+    <p id="instructions">ಒಂದು ಗುಂಪನ್ನು ರೂಪಿಸುವ ನಾಲ್ಕು ಪದಗಳನ್ನು ಹುಡುಕಿ.</p>
+    
+    <div id="found-groups-container"></div>
+    <div id="grid-container"></div>
+    
+    <div id="message"></div>
+    
+    <div id="mistakes-container"></div>
+    <div id="controls"></div>
+</div>
+
+<div id="game-over-screen">
+    <div id="game-over-box">
+        <h2 id="game-over-title"></h2>
+        <p id="game-over-message"></p>
+        <div id="solution-display"></div>
+        <button id="play-again-button">ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ</button>
+    </div>
+</div>
+
+<script>
+// --- START: NEW, EXTREMELY DIFFICULT PUZZLE LIBRARY ---
+const puzzles = [
+  const puzzles = [
+    { // Puzzle 1
+        solution: {
+            'ಗಾದೆ: __ ಇಲ್ಲದವನಿಗೆ ತನ್ನ ನೆರಳೇ ವೈರಿ': ['ಧೈರ್ಯ', 'ಸ್ಥೈರ್ಯ', 'ನಿರ್ಭಯತೆ', 'ಎದೆಗಾರಿಕೆ'],
+            'ಕಾವ್ಯದಲ್ಲಿ ಬರುವ "ದಾರಿ"ಯ ರೂಪಕಗಳು': ['ಹಾದಿಬೀದಿ', 'ಜೀವನಪಥ', 'ಮಗ್ಗುಲುದಾರ', 'ದಿಕ್ಕುದೆಸೆ'],
+            'ಕಾಗದಪತ್ರಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪಾರ್ಸಿ ಮೂಲದ ಪದಗಳು': ['ದಸ್ತಾವೇಜು', 'ಖುಲಾಸೆ', 'ರುಜು', 'ಮೊಕದ್ದಮೆ'],
+            'ಬೂಟಾಟಿಕೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ತೋರಿಕೆ', 'ಜಂಬ', 'ನಟನೆ', 'ಡಾಂಭಿಕತೆ']
+        },
+        difficulty: {'ಬೂಟಾಟಿಕೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಕಾಗದಪತ್ರಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪಾರ್ಸಿ ಮೂಲದ ಪದಗಳು':'green', 'ಕಾವ್ಯದಲ್ಲಿ ಬರುವ "ದಾರಿ"ಯ ರೂಪಕಗಳು':'blue', 'ಗಾದೆ: __ ಇಲ್ಲದವನಿಗೆ ತನ್ನ ನೆರಳೇ ವೈರಿ':'purple'}
+    },
+    { // Puzzle 2
+        solution: {
+            'ನವರಸಗಳಲ್ಲಿ ಒಂದಾದ "ಹಾಸ್ಯ"ದ ಪ್ರಭೇದಗಳು': ['ಸ್ಮಿತ', 'ಹಸಿತ', 'ವಿಹಸಿತ', 'ಅವಹಸಿತ'],
+            'ಬರವಣಿಗೆಯನ್ನು ಅಳಿಸುವ ಸಾಧನಗಳು': ['ರಬ್ಬರು', 'ತಿದ್ದುಪಡಿ ದ್ರವ', 'ಅಳಿಸುಗೆ', 'ಬ್ಲೇಡು'],
+            'ಪೊಳ್ಳುತನ ಅಥವಾ ನಿರರ್ಥಕತೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಜೊಳ್ಳು', 'ತೊಳ್ಳು', 'ನೀರುಪಾಲಾಗು', 'ಕೈಚೆಲ್ಲು'],
+            'ದೇಹದಲ್ಲಿ ಧರಿಸುವ ವಿಭಿನ್ನ "ಪಟ್ಟಿ"ಗಳು': ['ಡಾಬು', 'ಒಡ್ಯಾಣ', 'ನಡುಪಟ್ಟಿ', 'ಕಟಿಬಂಧ']
+        },
+        difficulty: {'ದೇಹದಲ್ಲಿ ಧರಿಸುವ ವಿಭಿನ್ನ "ಪಟ್ಟಿ"ಗಳು':'yellow', 'ಬರವಣಿಗೆಯನ್ನು ಅಳಿಸುವ ಸಾಧನಗಳು':'green', 'ಪೊಳ್ಳುತನ ಅಥವಾ ನಿರರ್ಥಕತೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'blue', 'ನವರಸಗಳಲ್ಲಿ ಒಂದಾದ "ಹಾಸ್ಯ"ದ ಪ್ರಭೇದಗಳು':'purple'}
+    },
+    { // Puzzle 3
+        solution: {
+            'ಬೆಳಕಿನ ಅಭಾವವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಮಬ್ಬು', 'ಕತ್ತಲೆ', 'ಇರುಳು', 'ಅಂಧಕಾರ'],
+            'ಪರೋಕ್ಷವಾಗಿ "ಮಾತನಾಡು"ವುದನ್ನು ಸೂಚಿಸುವ ಕ್ರಿಯಾಪದಗಳು': ['ಪಿಸುಗುಟ್ಟು', 'ಗುಸುಗುಸು', 'ಜಪಿಸು', 'ಗೊಣಗು'],
+            '"ಅರಿ" ಧಾತುವಿನಿಂದ ಹುಟ್ಟಿದ ಪದಗಳು': ['ಅರಿವು', 'ಅರಿಕೆ', 'ಅರಿಕಾರ', 'ಅರಿತ'],
+            'ಬೇಂದ್ರೆಯವರ "ಗರಿ" ಕವನ ಸಂಕಲನದ ಕೆಲವು ಕವಿತೆಗಳು': ['ನಾದಲೀಲೆ', 'ಸಖೀಗೀತ', 'ಬೆಳಗು', 'ಭಾವಗೀತೆ']
+        },
+        difficulty: {'ಬೆಳಕಿನ ಅಭಾವವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಪರೋಕ್ಷವಾಗಿ "ಮಾತನಾಡು"ವುದನ್ನು ಸೂಚಿಸುವ ಕ್ರಿಯಾಪದಗಳು':'green', 'ಬೇಂದ್ರೆಯವರ "ಗರಿ" ಕವನ ಸಂಕಲನದ ಕೆಲವು ಕವಿತೆಗಳು':'blue', '"ಅರಿ" ಧಾತುವಿನಿಂದ ಹುಟ್ಟಿದ ಪದಗಳು':'purple'}
+    },
+    { // Puzzle 4
+        solution: {
+            'ಸಂಗೀತದ ತಾಳಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': ['ಸಮ', 'ಅತೀತ', 'ಅನಾಗತ', 'ವಿಷಮ'],
+            'ಮಾನಸಿಕ ಗೊಂದಲವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಗಲಿಬಿಲಿ', 'ತಳಮಳ', 'ದ್ವಂದ್ವ', 'ತಳಕು-ಮಳಕು'],
+            'ಸಾಹಿತ್ಯ ವಿಮರ್ಶೆಯ ಪರಿಕಲ್ಪನೆಗಳು': ['ಧ್ವನಿ', 'ರಸ', 'ಔಚಿತ್ಯ', 'ವಕ್ರೋಕ್ತಿ'],
+            'ಒಂದೇ ವಸ್ತುವಿನ ಬೇರೆ ಬೇರೆ ಭಾಗಗಳು': ['ತುದಿ', 'ಮೂಲ', 'ಮಧ್ಯ', 'ಅಂಚು']
+        },
+        difficulty: {'ಒಂದೇ ವಸ್ತುವಿನ ಬೇರೆ ಬೇರೆ ಭಾಗಗಳು':'yellow', 'ಮಾನಸಿಕ ಗೊಂದಲವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'green', 'ಸಂಗೀತದ ತಾಳಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು':'blue', 'ಸಾಹಿತ್ಯ ವಿಮರ್ಶೆಯ ಪರಿಕಲ್ಪನೆಗಳು':'purple'}
+    },
+    { // Puzzle 5
+        solution: {
+            'ವಿವಿಧ ಬಗೆಯ ನಗುಗಳು': ['ಮುಗುಳುನಗೆ', 'ಕಿರುನಗೆ', 'ಅট্টಹಾಸ', 'ಪರಿಹಾಸ'],
+            'ಮಾತಿನ ವೈಖರಿಯನ್ನು ತಿಳಿಸುವ ಪದಗಳು': ['ವಾಕ್ಚಾತುರ್ಯ', 'ಮಾತುಗಾರಿಕೆ', 'ವೈಖರಿ', 'ಶೈಲಿ'],
+            '"ಅಂತ್ಯ"ವನ್ನು ಸೂಚಿಸುವ ಸಮಾನಾರ್ಥಕಗಳು': ['ಇತಿ', 'ಮುಕ್ತಾಯ', 'ನೆಲೆ', 'ಪರ್ಯವಸಾನ'],
+            'ಕುವೆಂಪುರವರ "ಕಾನೂರು ಹೆಗ್ಗಡತಿ" ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು': ['ಹೂವಯ್ಯ', 'ಚಂದ್ರಯ್ಯಗೌಡ', 'ತಿಮ್ಮಿ', 'ಸಿಂಗೆ']
+        },
+        difficulty: {'ವಿವಿಧ ಬಗೆಯ ನಗುಗಳು':'yellow', 'ಮಾತಿನ ವೈಖರಿಯನ್ನು ತಿಳಿಸುವ ಪದಗಳು':'green', '"ಅಂತ್ಯ"ವನ್ನು ಸೂಚಿಸುವ ಸಮಾನಾರ್ಥಕಗಳು':'blue', 'ಕುವೆಂಪುರವರ "ಕಾನೂರು ಹೆಗ್ಗಡತಿ" ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು':'purple'}
+    },
+    { // Puzzle 6
+        solution: {
+            'ಭಾವನೆಗಳ ತೀವ್ರತೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಉದ್ವೇಗ', 'ಆವೇಶ', 'ರೋಷ', 'ಕೋಪ'],
+            'ದೃಷ್ಟಿ ಭ್ರಮೆಯನ್ನು ಉಂಟುಮಾಡುವಂತಹುಗಳು': ['ಬಿಸಿಲುಗುದುರೆ', 'ಕನ್ನಡಿಯೊಳಗಿನ ಗಂಟು', 'ಆಕಾಶತಾವರೆ', 'ಮೊಲದ ಕೋಡು'],
+            'ಗಾದೆ: ಅಕ್ಕಿ ಮೇಲೆ ಆಸೆ, _____ ಮೇಲೆ ಪ್ರೀತಿ': ['ನೆಂಟರ', 'ಬಂಧುಗಳ', 'ಸ್ನೇಹಿತರ', 'ಪಕ್ಕದವರ'],
+            'ಸೋಲನ್ನು ಸೂಚಿಸುವ ನುಡಿಗಟ್ಟುಗಳು': ['ಮಣ್ಣುಮುಕ್ಕಿಸು', 'ಮಕಾಡೆ ಮಲಗಿಸು', 'ಧೂಳೀಪಟ ಮಾಡು', 'ಬೆನ್ನಟ್ಟಿಸು']
+        },
+        difficulty: {'ಭಾವನೆಗಳ ತೀವ್ರತೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಸೋಲನ್ನು ಸೂಚಿಸುವ ನುಡಿಗಟ್ಟುಗಳು':'green', 'ದೃಷ್ಟಿ ಭ್ರಮೆಯನ್ನು ಉಂಟುಮಾಡುವಂತಹುಗಳು':'blue', 'ಗಾದೆ: ಅಕ್ಕಿ ಮೇಲೆ ಆಸೆ, _____ ಮೇಲೆ ಪ್ರೀತಿ':'purple'}
+    },
+    { // Puzzle 7
+        solution: {
+            'ಸಾಹಿತ್ಯದಲ್ಲಿ "ನಾಯಕ"ನ ವಿಧಗಳು': ['ಧೀರೋದಾತ್ತ', 'ಧೀರಲಲಿತ', 'ಧೀರಶಾಂತ', 'ಧೀರೋದ್ಧತ'],
+            'ಗೌಪ್ಯವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ರಹಸ್ಯ', 'ಗುಟ್ಟು', 'ಮರ್ಮ', 'ನಿಗೂಢ'],
+            'ಅನಾವಶ್ಯಕ ಚರ್ಚೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಜಿಜ್ಞಾಸೆ', 'ವಿತಂಡವಾದ', 'ಕುತರ್ಕ', 'ಹುಯಿಲು'],
+            'ಮಾತು ತಪ್ಪುವುದನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಪಲ್ಟಿ ಹೊಡೆ', 'ನೀರಲ್ಲಿ ಹೋಮ', 'ಕೈಕೊಡು', 'ಮೋಸ ಮಾಡು']
+        },
+        difficulty: {'ಗೌಪ್ಯವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಮಾತು ತಪ್ಪುವುದನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'green', 'ಅನಾವಶ್ಯಕ ಚರ್ಚೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'blue', 'ಸಾಹಿತ್ಯದಲ್ಲಿ "ನಾಯಕ"ನ ವಿಧಗಳು':'purple'}
+    },
+    { // Puzzle 8
+        solution: {
+            'ಬರವಣಿಗೆಯ ಶೈಲಿಗೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು': ['ಓಘ', 'ಜังหวೆ', 'ಗತಿ', 'ಲಹರಿ'],
+            'ಪಂಪಭಾರತದ ಪ್ರಮುಖ ಸ್ತ್ರೀ ಪಾತ್ರಗಳು': ['ದ್ರೌಪದಿ', 'ಕುಂತಿ', 'ಗಾಂಧಾರಿ', 'ಸುಭದ್ರೆ'],
+            'ಒಂದು ವಿಷಯವನ್ನು ವಿವರಿಸುವ ರೀತಿಗಳು': ['ವಿಶ್ಲೇಷಣೆ', 'ವಿವರಣೆ', 'ವ್ಯಾಖ್ಯಾನ', 'ಟೀಕೆ'],
+            'ವಾದ್ಯಗಳಿಲ್ಲದೆ ಮಾಡುವ ಸಂಗೀತ': ['ಪೀಪಿ', 'ಶಿಳ್ಳೆ', 'ಕೇಕೆ', 'ಚಪ್ಪಾಳೆ']
+        },
+        difficulty: {'ಬರವಣಿಗೆಯ ಶೈಲಿಗೆ ಸಂಬಂಧಿಸಿದ ಪದಗಳು':'yellow', 'ಒಂದು ವಿಷಯವನ್ನು ವಿವರಿಸುವ ರೀತಿಗಳು':'green', 'ವಾದ್ಯಗಳಿಲ್ಲದೆ ಮಾಡುವ ಸಂಗೀತ':'blue', 'ಪಂಪಭಾರತದ ಪ್ರಮುಖ ಸ್ತ್ರೀ ಪಾತ್ರಗಳು':'purple'}
+    },
+    { // Puzzle 9
+        solution: {
+            'ಟಿ.ಪಿ.ಕೈಲಾಸಂ ಅವರ ನಾಟಕಗಳ ಹೆಸರುಗಳು': ['ಟೊಳ್ಳುಗಟ್ಟಿ', 'ಹೋಂರೂಲು', 'ಪೋಲಿಕಿಟ್ಟಿ', 'ಬಂಡ್ವಾಳವಿಲ್ಲದ ಬಡಾಯಿ'],
+            'ಮನಸ್ಸಿನ ಸ್ಥಿತಿಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಶಾಂತ', 'ಚಂಚಲ', 'ಮೂಕ', 'ಜಡ'],
+            'ಗಿರೀಶ್ ಕಾರ್ನಾಡರ ನಾಟಕಗಳ ಸ್ತ್ರೀ ಪಾತ್ರಗಳು': ['ಪದ್ಮಾವತಿ', 'ನಾಗಮಂಡಲ', 'ರಾಣಿ', 'ಚಂದ್ರಿ'],
+            'ಗಾದೆ: _____ ಇಲ್ಲದವನಿಗೆ ಸಂತೆಯಲ್ಲೂ ನಿದ್ದೆ': ['ಚಿಂತೆ', 'ಯೋಚನೆ', 'ವಿಚಾರ', 'ಕವಲು']
+        },
+        difficulty: {'ಮನಸ್ಸಿನ ಸ್ಥಿತಿಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಗಾದೆ: _____ ಇಲ್ಲದವನಿಗೆ ಸಂತೆಯಲ್ಲೂ ನಿದ್ದೆ':'green', 'ಗಿರೀಶ್ ಕಾರ್ನಾಡರ ನಾಟಕಗಳ ಸ್ತ್ರೀ ಪಾತ್ರಗಳು':'blue', 'ಟಿ.ಪಿ.ಕೈಲಾಸಂ ಅವರ ನಾಟಕಗಳ ಹೆಸರುಗಳು':'purple'}
+    },
+    { // Puzzle 10
+        solution: {
+            'ಯು.ಆರ್.ಅನಂತಮೂರ್ತಿಯವರ "ಸಂಸ್ಕಾರ" ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು': ['ಪ್ರಾಣೇಶಾಚಾರ್ಯ', 'ಚಂದ್ರಿ', 'ನಾರಣಪ್ಪ', 'ಗರುಡ'],
+            'ಪೂರ್ಣಚಂದ್ರ ತೇಜಸ್ವಿಯವರ "ಕರ್ವಾಲೋ" ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು': ['ಕರ್ವಾಲೋ', 'ಮಂದಣ್ಣ', 'ಪ್ಯಾರಾ', 'ಕಿವಿ'],
+            'ಕನ್ನಡದ "ಜೋಡುನುಡಿಗಳು" (Reduplicative words)': ['ಮನೆಮಠ', 'ಹಣಕಾಸು', 'ಅಕ್ಕಪಕ್ಕ', 'ಆಳುಕಾಳು'],
+            'ದ.ರಾ.ಬೇಂದ್ರೆಯವರ "ನಾಕುತಂತಿ" ಕವನ ಸಂಕಲನದ ಭಾಗಗಳು': ['ನಾಕುತಂತಿ', 'ಸಖೀಗೀತ', 'ನಾದಲೀಲೆ', 'ಉಯ್ಯಾಲೆ']
+        },
+        difficulty: {'ಕನ್ನಡದ "ಜೋಡುನುಡಿಗಳು" (Reduplicative words)':'yellow', 'ದ.ರಾ.ಬೇಂದ್ರೆಯವರ "ನಾಕುತಂತಿ" ಕವನ ಸಂಕಲನದ ಭಾಗಗಳು':'green', 'ಪೂರ್ಣಚಂದ್ರ ತೇಜಸ್ವಿಯವರ "ಸಂಸ್ಕಾರ" ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು':'blue', 'ಪೂರ್ಣಚಂದ್ರ ತೇಜಸ್ವಿಯವರ "ಕರ್ವಾಲೋ" ಕಾದಂಬರಿಯ ಪಾತ್ರಗಳು':'purple'}
+    },
+    { // Puzzle 11
+        solution: {
+            'ಚಂದ್ರಶೇಖರ ಕಂಬಾರರ "ಸಿರಿಸಂಪಿಗೆ" ನಾಟಕದ ಪಾತ್ರಗಳು': ['ಸಿರಿಸಂಪಿಗೆ', 'ಕರಿಯ', 'ರಾಜ', 'ಶಿವನಾಗ'],
+            'ಪ್ರಾಚೀನ ಕಾಲದ ಅಳತೆಯ ಸಾಧನಗಳು': ['ಗಾವುದ', 'ಯೋಜನ', 'ಹರಿ', 'ಪಾವು'],
+            'ದೇವನೂರ ಮಹಾದೇವರ "ಒಡಲಾಳ" ಕೃತಿಯ ಪಾತ್ರಗಳು': ['ಸಾಲಮ್ಮ', 'ಮಾದಯ್ಯ', 'ಕುಸುಮ', 'ಶಂಕರ'],
+            'ಮೌನವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ನಿಶ್ಯಬ್ದ', 'ತೂष्णीं', 'ಮೌನ', 'ಜಡತೆ']
+        },
+        difficulty: {'ಪ್ರಾಚೀನ ಕಾಲದ ಅಳತೆಯ ಸಾಧನಗಳು':'yellow', 'ಮೌನವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'green', 'ದೇವನೂರ ಮಹಾದೇವರ "ಒಡಲಾಳ" ಕೃತಿಯ ಪಾತ್ರಗಳು':'blue', 'ಚಂದ್ರಶೇಖರ ಕಂಬಾರರ "ಸಿರಿಸಂಪಿಗೆ" ನಾಟಕದ ಪಾತ್ರಗಳು':'purple'}
+    },
+    { // Puzzle 12
+        solution: {
+            'ಎಸ್.ಎಲ್.ಭೈರಪ್ಪನವರ "ಪರ್ವ" ಕಾದಂಬರಿಯ ಕುರಿತಾದ ವಿಮರ್ಶಾತ್ಮಕ ಪದಗಳು': ['ವಾಸ್ತವವಾದ', 'ಮರುಸೃಷ್ಟಿ', 'ಮೌಲ್ಯ', 'ಮಾನವಕೇಂದ್ರಿತ'],
+            'ಕಾವ್ಯದಲ್ಲಿನ "ನಾಯಕಿ"ಯ ವಿಧಗಳು': ['ಸ್ವೀയാ', 'ಪರಕೀಯಾ', 'ಸಾಮಾನ್ಯಾ', 'ಮುಗ್ಧಾ'],
+            'ಕನ್ನಡದ "ದ್ವಿರುಕ್ತಿ" ಪದಗಳು': ['ಬೇಗಬೇಗನೆ', 'ಮತ್ತೆಮತ್ತೆ', 'ದೊಡ್ಡದೊಡ್ಡ', 'ಹಿಂದೆಹಿಂದೆ'],
+            'ಮೋಸವನ್ನು ಸೂಚಿಸುವ ಸಮಾನಾರ್ಥಕಗಳು': ['ವಂಚನೆ', 'ಕಪಟ', 'ಛಲ', 'ಜಿత్తు']
+        },
+        difficulty: {'ಕನ್ನಡದ "ದ್ವಿರುಕ್ತಿ" ಪದಗಳು':'yellow', 'ಮೋಸವನ್ನು ಸೂಚಿಸುವ ಸಮಾನಾರ್ಥಕಗಳು':'green', 'ಕಾವ್ಯದಲ್ಲಿನ "ನಾಯಕಿ"ಯ ವಿಧಗಳು':'blue', 'ಎಸ್.ಎಲ್.ಭೈರಪ್ಪನವರ "ಪರ್ವ" ಕಾದಂಬರಿಯ ಕುರಿತಾದ ವಿಮರ್ಶಾತ್ಮಕ ಪದಗಳು':'purple'}
+    },
+    { // Puzzle 13
+        solution: {
+            'ಹೊಯ್ಸಳ ದೇವಾಲಯಗಳ ವಾಸ್ತುಶಿಲ್ಪದ ಭಾಗಗಳು': ['ಜಗತಿ', 'ಭಿತ್ತಿ', 'ಶಿಖರ', 'ಸ್ತಂಭ'],
+            'ಒಂದು ಘಟನೆಯ ವಿವಿಧ ಹಂತಗಳು': ['ಆರಂಭ', 'ಮಧ್ಯಂತರ', 'ಘರ್ಷಣೆ', 'ಪರಿಹಾರ'],
+            'ಕನ್ನಡ ಛಂದಸ್ಸಿನ "ಷಟ್ಪದಿ"ಯ ಪ್ರಕಾರಗಳು': ['ಶರ', 'ಕುಸುಮ', 'ಭೋಗ', 'ಭಾಮಿನೀ'],
+            'ಯೋಚನಾ ಲಹರಿಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ವಿಚಾರಧಾರೆ', 'ಚಿಂತನ', 'ಮನನ', 'ತರ್ಕ']
+        },
+        difficulty: {'ಒಂದು ಘಟನೆಯ ವಿವಿಧ ಹಂತಗಳು':'yellow', 'ಯೋಚನಾ ಲಹರಿಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'green', 'ಕನ್ನಡ ಛಂದಸ್ಸಿನ "ಷಟ್ಪದಿ"ಯ ಪ್ರಕಾರಗಳು':'blue', 'ಹೊಯ್ಸಳ ದೇವಾಲಯಗಳ ವಾಸ್ತುಶಿಲ್ಪದ ಭಾಗಗಳು':'purple'}
+    },
+    { // Puzzle 14
+        solution: {
+            'ವಿಜಯನಗರ ಕಾಲದ "ಅಷ್ಟದಿಗ್ಗಜ" ಕವಿಗಳು': ['ಪೆದ್ದಣ್ಣ', 'ತಿಮ್ಮಣ್ಣ', 'ಧೂರ್ಜಟಿ', 'ರಾಮರಾಜಭೂಷಣ'],
+            'ಕಾಲವನ್ನು ವ್ಯರ್ಥ ಮಾಡುವುದನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಹರಟೆ', ' ಕಾಲಹರಣ', 'ವ್ಯರ್ಥಾಲಾಪ', 'ತಿರುಗಾಟ'],
+            'ಕೆ.ಎಸ್.ನರಸಿಂಹಸ್ವಾಮಿಯವರ "ಮೈಸೂರು ಮಲ್ಲಿಗೆ"ಯ ಕವಿತೆಗಳು': ['ಒಂದು ಸಂಜೆ', 'ನಿನ್ನ ಪ್ರೇಮದ ಪರಿಯ', 'ಬಳೇಗಾರ ಚನ್ನಯ್ಯ', 'ರಾಯರು ಬಂದರು'],
+            'ಅಸ್ಪಷ್ಟತೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಸಂದಿಗ್ಧ', 'ದ್ವಂದ್ವಾರ್ಥ', 'ಅನಿರ್ದಿಷ್ಟ', 'ಗೂಢ']
+        },
+        difficulty: {'ಕಾಲವನ್ನು ವ್ಯರ್ಥ ಮಾಡುವುದನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಅಸ್ಪಷ್ಟತೆಯನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'green', 'ಕೆ.ಎಸ್.ನರಸಿಂಹಸ್ವಾಮಿಯವರ "ಮೈಸೂರು ಮಲ್ಲಿಗೆ"ಯ ಕವಿತೆಗಳು':'blue', 'ವಿಜಯನಗರ ಕಾಲದ "ಅಷ್ಟದಿಗ್ಗಜ" ಕವಿಗಳು':'purple'}
+    },
+    { // Puzzle 15
+        solution: {
+            'ಜಿ.ಎಸ್.ಶಿವರುದ್ರಪ್ಪನವರ "ಎದೆ ತುಂಬಿ ಹಾಡಿದೆನು" ಗೀತ ಸಂಕಲನದ ಗೀತೆಗಳು': ['ಕಾಣದ ಕಡಲಿಗೆ', 'ಎಲ್ಲೋ ಹುಡುಕಿದೆ', 'ಹಾಡು ಹಳೆಯದಾದರೇನು', 'ಹೋಗುತಿಹುದು ಕಾಲ'],
+            'ಒಂದು ವಸ್ತುವಿನ ಗುಣವನ್ನು ಹೊಗಳುವ ಪದಗಳು': ['ಅದ್ಭುತ', 'ಅಪೂರ್ವ', 'ಅಸಾಧಾರಣ', 'ಅನನ್ಯ'],
+            'ಮಾಸ್ತಿ ವೆಂಕಟೇಶ ಅಯ್ಯಂಗಾರ್ ಅವರ ಕಥೆಗಳಲ್ಲಿನ ಸಾಮಾನ್ಯ ಪಾತ್ರ ಮಾದರಿಗಳು': ['ಸುಬ್ಬಣ್ಣ', 'ಗೌಡ', 'ಶಾನುಭೋಗ', 'ಪುರೋಹಿತ'],
+            'ಗಾದೆ: _____ ಇಲ್ಲದೆ ಬಡವನಾಗು, ವಿದ್ಯೆ ಇಲ್ಲದೆ ಬಡವನಾಗಬೇಡ': ['ಹಣ', 'ಧನ', 'ಸಂಪತ್ತು', 'ಆಸ್ತಿ']
+        },
+        difficulty: {'ಒಂದು ವಸ್ತುವಿನ ಗುಣವನ್ನು ಹೊಗಳುವ ಪದಗಳು':'yellow', 'ಗಾದೆ: _____ ಇಲ್ಲದೆ ಬಡವನಾಗು, ವಿದ್ಯೆ ಇಲ್ಲದೆ ಬಡವನಾಗಬೇಡ':'green', 'ಮಾಸ್ತಿ ವೆಂಕಟೇಶ ಅಯ್ಯಂಗಾರ್ ಅವರ ಕಥೆಗಳಲ್ಲಿನ ಸಾಮಾನ್ಯ ಪಾತ್ರ ಮಾದರಿಗಳು':'blue', 'ಜಿ.ಎಸ್.ಶಿವರುದ್ರಪ್ಪನವರ "ಎದೆ ತುಂಬಿ ಹಾಡಿದೆನು" ಗೀತ ಸಂಕಲನದ ಗೀತೆಗಳು':'purple'}
+    },
+    { // Puzzle 16
+        solution: {
+            'ಶ್ರೀರಂಗರ (ಆದ್ಯ ರಂಗಾಚಾರ್ಯ) ನಾಟಕಗಳ ಹೆಸರುಗಳು': ['ಕತ್ತಲೆ-ಬೆಳಕು', 'ಶೋಕಚಕ್ರ', 'ಹರಿಜನ್ವಾರ', 'ಕೇಳು ಜನಮೇಜಯ'],
+            'ತುಂಬಾ ಹಳೆಯದನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಪುರಾತನ', 'ಪ್ರಾಚೀನ', 'ಸನಾತನ', 'ಚಾರಿತ್ರಿಕ'],
+            'ವಚನಗಳಲ್ಲಿ ಬರುವ "ಅರಿವು" ಮತ್ತು "ಮರೆವು" ಪರಿಕಲ್ಪನೆಗಳು': ['ತನ್ನ ತಾನರಿ', 'ಮರೆವೆಂಬುದು ಮಾಯೆ', 'ಅರಿವೇ ಗುರು', 'ನೆನಹೇ ಸಾಕು'],
+            'ಒಂದೇ ಮೂಲದಿಂದ ಹುಟ್ಟಿದ ಪದಗಳು': ['ದರ್ಶನ', 'ದರ್ಪಣ', 'ಪ್ರದರ್ಶನ', 'ಮಾರ್ಗದರ್ಶಿ']
+        },
+        difficulty: {'ತುಂಬಾ ಹಳೆಯದನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಒಂದೇ ಮೂಲದಿಂದ ಹುಟ್ಟಿದ ಪದಗಳು':'green', 'ವಚನಗಳಲ್ಲಿ ಬರುವ "ಅರಿವು" ಮತ್ತು "ಮರೆವು" ಪರಿಕಲ್ಪನೆಗಳು':'blue', 'ಶ್ರೀರಂಗರ (ಆದ್ಯ ರಂಗಾಚಾರ್ಯ) ನಾಟಕಗಳ ಹೆಸರುಗಳು':'purple'}
+    },
+    { // Puzzle 17
+        solution: {
+            'ಕರ್ನಾಟಕದ ಜಾನಪದ ಮಹಾಕಾವ್ಯಗಳು': ['ಮಲೆಯ ಮಹದೇಶ್ವರ', 'ಮಂಟೇಸ್ವಾಮಿ ಕಾವ್ಯ', 'ಕುಮಾರರಾಮ', 'ಜಾಂಬವ ಪುರಾಣ'],
+            'ಅತಿಶಯವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಅಗಾಧ', 'ಅಪಾರ', 'ಅಮಿತ', 'ಅನಂತ'],
+            'ರನ್ನನ "ಗದಾಯುದ್ಧ" ಕಾವ್ಯದ ಪ್ರಮುಖ ಸನ್ನಿವೇಶಗಳು': ['ಸಿಂಹಾವಲೋಕನ', 'ಜಲಸ್ತಂಭನ', 'ಊರುಭಂಗ', 'ಸಂಧಾನ'],
+            'ಕಾವ್ಯಮೀಮಾಂಸೆಯ ಪ್ರಮುಖ ಆಚಾರ್ಯರು': ['ಭರತ', 'ದಂಡಿ', 'ವಾಮನ', 'ಆನಂದವರ್ಧನ']
+        },
+        difficulty: {'ಅತಿಶಯವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಕಾವ್ಯಮೀಮಾಂಸೆಯ ಪ್ರಮುಖ ಆಚಾರ್ಯರು':'green', 'ರನ್ನನ "ಗದಾಯುದ್ಧ" ಕಾವ್ಯದ ಪ್ರಮುಖ ಸನ್ನಿವೇಶಗಳು':'blue', 'ಕರ್ನಾಟಕದ ಜಾನಪದ ಮಹಾಕಾವ್ಯಗಳು':'purple'}
+    },
+    { // Puzzle 18
+        solution: {
+            'ಪ್ರಾಚೀನ ಕರ್ನಾಟಕದ ರಾಜವಂಶಗಳು': ['ಗಂಗ', 'ಕದಂಬ', 'ಬಾದಾಮಿ ಚಾಲುಕ್ಯ', 'ರಾಷ್ಟ್ರಕೂಟ'],
+            'ಮನಸ್ಸಿನ ನಾಲ್ಕು ಸ್ಥಿತಿಗಳು (ಅಂತಃಕರಣ ಚತುಷ್ಟಯ)': ['ಮನಸ್ಸು', 'ಬುದ್ಧಿ', 'ಚಿತ್ತ', 'ಅಹಂಕಾರ'],
+            'ಮಾಪನದ ವಿವಿಧ ಏಕಮಾನಗಳು': ['ಗಜ', 'ಮೈಲಿ', 'সেরು', 'ಮಣ'],
+            'ಪುರಂದರದಾಸರ ಕೀರ್ತನೆಗಳಲ್ಲಿ ಬರುವ ಸಾಮಾನ್ಯ ಪದಗಳು': ['ಆರು ಬಲ್ಲರು', 'ಹರಿಯೇ', 'ಪಾಂಡುರಂಗ', 'ಸುಲಭ ಪೂಜೆ']
+        },
+        difficulty: {'ಮಾಪನದ ವಿವಿಧ ಏಕಮಾನಗಳು':'yellow', 'ಪ್ರಾಚೀನ ಕರ್ನಾಟಕದ ರಾಜವಂಶಗಳು':'green', 'ಪುರಂದರದಾಸರ ಕೀರ್ತನೆಗಳಲ್ಲಿ ಬರುವ ಸಾಮಾನ್ಯ ಪದಗಳು':'blue', 'ಮನಸ್ಸಿನ ನಾಲ್ಕು ಸ್ಥಿತಿಗಳು (ಅಂತಃಕರಣ ಚತುಷ್ಟಯ)':'purple'}
+    },
+    { // Puzzle 19
+        solution: {
+            'ಕನ್ನಡದ ವಿಭಕ್ತಿ ಪ್ರತ್ಯಯಗಳು': ['ಉ', 'ಅನ್ನು', 'ಇಂದ', 'ಗೆ'],
+            'ಸಮಾಸದ ಪ್ರಕಾರಗಳು': ['ತತ್ಪುರುಷ', 'ಕರ್ಮಧಾರಯ', 'ದ್ವಿಗು', 'ಬಹುವ್ರೀಹಿ'],
+            'ಗಾದೆ: _____ ಗೆದ್ದರೆ, ಅರಮನೆಗೇ ದಾರಿ': ['ಊರು', 'ಸಮೂಹ', 'ಜನ', 'ಸಮಾಜ'],
+            'ಬಸವಣ್ಣನವರ ವಚನಗಳ ಅಂಕಿತನಾಮ': ['ಕೂಡಲಸಂಗಮದೇವ', 'ಶರಣ', 'ಲಿಂಗ', 'ಜಂಗಮ']
+        },
+        difficulty: {'ಕನ್ನಡದ ವಿಭಕ್ತಿ ಪ್ರತ್ಯಯಗಳು':'yellow', 'ಸಮಾಸದ ಪ್ರಕಾರಗಳು':'green', 'ಬಸವಣ್ಣನವರ ವಚನಗಳ ಅಂಕಿತನಾಮ':'blue', 'ಗಾದೆ: _____ ಗೆದ್ದರೆ, ಅರಮನೆಗೇ ದಾರಿ':'purple'}
+    },
+    { // Puzzle 20
+        solution: {
+            'ಷಡ್ರಸಗಳು': ['ಮಧುರ', 'ಆಮ್ಲ', 'ಲವಣ', 'ಕಟು'],
+            'ಪಂಚಭೂತಗಳು': ['ಭೂಮಿ', 'ಆಕಾಶ', 'ಅಗ್ನಿ', 'ವಾಯು'],
+            'ಕನಕದಾಸರ "ಮೋಹನತರಂಗಿಣಿ" ಕಾವ್ಯದ ಪಾತ್ರಗಳು': ['ಕೃಷ್ಣ', 'ರುಕ್ಮಿಣಿ', 'ಸತ್ಯಭಾಮ', 'ಅನಿರುದ್ಧ'],
+            'ವ್ಯಂಗ್ಯವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಪರಿಹಾಸ', 'ಚೇಷ್ಟೆ', 'ಅಣಕ', 'ವಿಡಂಬನೆ']
+        },
+        difficulty: {'ಷಡ್ರಸಗಳು':'yellow', 'ಪಂಚಭೂತಗಳು':'green', 'ವ್ಯಂಗ್ಯವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'blue', 'ಕನಕದಾಸರ "ಮೋಹನತರಂಗಿಣಿ" ಕಾವ್ಯದ ಪಾತ್ರಗಳು':'purple'}
+    },
+    { // Puzzle 21
+        solution: {
+            'ನವರತ್ನಗಳು (ಜ್ಯೋತಿಷ್ಯ ಶಾಸ್ತ್ರ)': ['ವಜ್ರ', 'ಮುತ್ತು', 'ಹವಳ', 'ಮಾಣಿಕ್ಯ'],
+            'ಪಂಚಲೋಹಗಳು': ['ಬಂಗಾರ', 'ಬೆಳ್ಳಿ', 'ತಾಮ್ರ', 'ಕಬ್ಬಿಣ', 'ಸೀಸ'],
+            'ಭಾಷಾವಿಜ್ಞಾನದ ಶಾಖೆಗಳು': ['ಧ್ವನಿವಿಜ್ಞಾನ', 'ರೂಪಿಮವಿಜ್ಞಾನ', 'ವಾಕ್ಯವಿಜ್ಞಾನ', 'ಅರ್ಥವಿಜ್ಞಾನ'],
+            'ಹಲ್ಮಿಡಿ ಶಾಸನದಲ್ಲಿ ಕಂಡುಬರುವ ಪದಗಳು': ['ಕದಂಬನ್', 'ನರಿದಾವಿಳೆ', 'ಪಶುಪತಿ', 'ಭಟಾರಿ']
+        },
+        difficulty: {'ಪಂಚಲೋಹಗಳು':'yellow', 'ನವರತ್ನಗಳು (ಜ್ಯೋತಿಷ್ಯ ಶಾಸ್ತ್ರ)':'green', 'ಹಲ್ಮಿಡಿ ಶಾಸನದಲ್ಲಿ ಕಂಡುಬರುವ ಪದಗಳು':'blue', 'ಭಾಷಾವಿಜ್ಞಾನದ ಶಾಖೆಗಳು':'purple'}
+    },
+    { // Puzzle 22
+        solution: {
+            'ಪಂಚೇಂದ್ರಿಯಗಳು': ['ಕಣ್ಣು', 'ಕಿವಿ', 'ಮೂಗು', 'ನಾಲಿಗೆ', 'ಚರ್ಮ'],
+            'ಷಟ್ಚಕ್ರಗಳು': ['ಮೂಲಾಧಾರ', 'ಸ್ವಾಧಿಷ್ಠಾನ', 'ಮಣಿಪುರ', 'ಅನಾಹತ'],
+            'ಗಾದೆ: _____ ಇಲ್ಲದವನ ಮಾತು, ತಳವಿಲ್ಲದ ದೋಣಿ': ['ಸತ್ಯ', 'ನಿಜ', 'ಪ್ರಾಮಾಣಿಕತೆ', 'ವಾಸ್ತವ'],
+            'ಯಕ್ಷಗಾನದ ಪ್ರಸಂಗಗಳು': ['ಗದಾಯುದ್ಧ', 'ಕರ್ಣಪರ್ವ', 'ಸುದರ್ಶನ ವಿಜಯ', 'ಚಂದ್ರಹಾಸ']
+        },
+        difficulty: {'ಪಂಚೇಂದ್ರಿಯಗಳು':'yellow', 'ಷಟ್ಚಕ್ರಗಳು':'green', 'ಗಾದೆ: _____ ಇಲ್ಲದವನ ಮಾತು, ತಳವಿಲ್ಲದ ದೋಣಿ':'blue', 'ಯಕ್ಷಗಾನದ ಪ್ರಸಂಗಗಳು':'purple'}
+    },
+    { // Puzzle 23
+        solution: {
+            'ಸಪ್ತಸ್ವರಗಳು': ['ಷಡ್ಜ', 'ರಿಷಭ', 'ಗಾಂಧಾರ', 'ಮಧ್ಯಮ'],
+            'ನವರಸಗಳು': ['ಶೃಂಗಾರ', 'ಹಾಸ್ಯ', 'ಕರುಣ', 'ರೌದ್ರ'],
+            'ಹಸ್ತಪ್ರತಿಯ ಅಧ್ಯಯನದ ಅಂಶಗಳು': ['ಲಿಪಿಕಾರ', 'ಕಾಲ', 'ಸ್ಥಳ', 'ಲೇಖನ ಸಾಮಗ್ರಿ'],
+            'ಅಲ್ಲಮಪ್ರಭುವಿನ ವಚನಗಳ ಅಂಕಿತನಾಮ': ['ಗುಹೇಶ್ವರ', 'ಬೆಟ್ಟ', 'ಬಯಲು', 'ಶೂನ್ಯ']
+        },
+        difficulty: {'ಸಪ್ತಸ್ವರಗಳು':'yellow', 'ನವರಸಗಳು':'green', 'ಹಸ್ತಪ್ರತಿಯ ಅಧ್ಯಯನದ ಅಂಶಗಳು':'blue', 'ಅಲ್ಲಮಪ್ರಭುವಿನ ವಚನಗಳ ಅಂಕಿತನಾಮ':'purple'}
+    },
+    { // Puzzle 24
+        solution: {
+            'ಅಷ್ಟದಿಕ್ಪಾಲಕರು': ['ಇಂದ್ರ', 'ಅಗ್ನಿ', 'ಯಮ', 'ವರುಣ'],
+            'ನವಗ್ರಹಗಳು': ['ಸೂರ್ಯ', 'ಚಂದ್ರ', 'ಮಂಗಳ', 'ಬುಧ'],
+            'ನಾಟಕದ ಅಂಶಗಳು': ['ವಸ್ತು', 'ಪಾತ್ರ', 'ಸಂಭಾಷಣೆ', 'ರಂಗಸಜ್ಜಿಕೆ'],
+            'ಅಕ್ಕಮಹಾದೇವಿಯ ವಚನಗಳ ಅಂಕಿತನಾಮ': ['ಚೆನ್ನಮಲ್ಲಿಕಾರ್ಜುನ', 'ಗಿರಿ', 'ಹೂವು', 'ಪತಿ']
+        },
+        difficulty: {'ನವಗ್ರಹಗಳು':'yellow', 'ಅಷ್ಟದಿಕ್ಪಾಲಕರು':'green', 'ನಾಟಕದ ಅಂಶಗಳು':'blue', 'ಅಕ್ಕಮಹಾದೇವಿಯ ವಚನಗಳ ಅಂಕಿತನಾಮ':'purple'}
+    },
+    { // Puzzle 25
+        solution: {
+            'ದಶಾವತಾರಗಳು': ['ಮತ್ಸ್ಯ', 'ಕೂರ್ಮ', 'ವರಾಹ', 'ನರಸಿಂಹ'],
+            'ವೇದಗಳು': ['ಋಗ್ವೇದ', 'ಯಜುರ್ವೇದ', 'ಸಾಮವೇದ', 'ಅಥರ್ವಣವೇದ'],
+            'ಛಂದಸ್ಸಿನ ಗಣಗಳು': ['ಯಗಣ', 'ಮಗಣ', 'ತಗಣ', 'ರಗಣ'],
+            'ಗಾದೆ: _____ ಬಲ್ಲವನಿಗೆ ರೋಗವಿಲ್ಲ': ['ಹಿತಮಿತ', 'ಪಥ್ಯ', 'ನಿಯಮ', 'ಅಳತೆ']
+        },
+        difficulty: {'ದಶಾವತಾರಗಳು':'yellow', 'ವೇದಗಳು':'green', 'ಛಂದಸ್ಸಿನ ಗಣಗಳು':'blue', 'ಗಾದೆ: _____ ಬಲ್ಲವನಿಗೆ ರೋಗವಿಲ್ಲ':'purple'}
+    },
+    { // Puzzle 26
+        solution: {
+            'ಚತುರ್ಮುಖ ಬ್ರಹ್ಮನ ಪರಿಕರಗಳು': ['ಕಮಂಡಲ', 'ಅಕ್ಷಮಾಲೆ', 'ಸ್ರುವ', 'ಪುಸ್ತಕ'],
+            'ವಿಷ್ಣುವಿನ ಆಯುಧಗಳು': ['ಶಂಖ', 'ಚಕ್ರ', 'ಗದೆ', 'ಪದ್ಮ'],
+            'ಪ್ರಾಚೀನ ಶಿಕ್ಷಣ ಕೇಂದ್ರದ ಹೆಸರುಗಳು': ['ಘಟಿಕಾ', 'ಬ್ರಹ್ಮಪುರಿ', 'ಅಗ್ರಹಾರ', 'ಮಠ'],
+            'ಸೋಲಿನ ಸಮಾನಾರ್ಥಕಗಳು': ['ಪರಾಭವ', 'ಅಪಜಯ', 'ಹಿನ್ನಡೆ', 'ಸೋಲು']
+        },
+        difficulty: {'ಸೋಲಿನ ಸಮಾನಾರ್ಥಕಗಳು':'yellow', 'ವಿಷ್ಣುವಿನ ಆಯುಧಗಳು':'green', 'ಪ್ರಾಚೀನ ಶಿಕ್ಷಣ ಕೇಂದ್ರದ ಹೆಸರುಗಳು':'blue', 'ಚತುರ್ಮುಖ ಬ್ರಹ್ಮನ ಪರಿಕರಗಳು':'purple'}
+    },
+    { // Puzzle 27
+        solution: {
+            'ಶಿವನ ಪರಿವಾರ': ['ಗಣಪತಿ', 'ಕಾರ್ತಿಕೇಯ', 'ನಂದಿ', 'ಭೃಂಗಿ'],
+            'ಶಿವನ ಆಭರಣಗಳು/ಲಾಂಛನಗಳು': ['ಹಾವು', 'ಚಂದ್ರ', 'ಗಂಗೆ', 'ತ್ರಿಶೂಲ'],
+            'ಖಗೋಳಶಾಸ್ತ್ರದ ಪರಿಕಲ್ಪನೆಗಳು': ['ಗ್ರಹಣ', 'ಅಯನ', 'ಸಂಕ್ರಾಂತಿ', 'ಯುತಿ'],
+            'ವಾದಿರಾಜರ "ಯುಕ್ತಿಮಲ್ಲಿಕಾ" ಕೃತಿಯ ವಿಷಯಗಳು': ['ತರ್ಕ', 'ನ್ಯಾಯ', 'ಮೀಮಾಂಸೆ', 'ವೇದಾಂತ']
+        },
+        difficulty: {'ಶಿವನ ಪರಿವಾರ':'yellow', 'ಶಿವನ ಆಭರಣಗಳು/ಲಾಂಛನಗಳು':'green', 'ಖಗೋಳಶಾಸ್ತ್ರದ ಪರಿಕಲ್ಪನೆಗಳು':'blue', 'ವಾದಿರಾಜರ "ಯುಕ್ತಿಮಲ್ಲಿಕಾ" ಕೃತಿಯ ವಿಷಯಗಳು':'purple'}
+    },
+    { // Puzzle 28
+        solution: {
+            'ಕನ್ನಡದ ಪ್ರಮುಖ ಉಪಭಾಷೆಗಳು': ['ಮೈಸೂರು', 'ಧಾರವಾಡ', 'ಮಂಗಳೂರು', 'ಗುಲ್ಬರ್ಗಾ'],
+            'ದ್ರಾವಿಡ ಭಾಷಾ ಕುಟುಂಬದ ಸದಸ್ಯರು': ['ಕನ್ನಡ', 'ತಮಿಳು', 'ತೆಲುಗು', 'ಮಲಯಾಳಂ'],
+            'ಆಯುರ್ವೇದದ ತ್ರಿದೋಷಗಳು': ['ವಾತ', 'ಪಿತ್ತ', 'ಕಫ', 'ಸನ್ನಿಪಾತ'],
+            'ಗಾದೆ: _____ ಇಲ್ಲದಿದ್ದರೆ, ವಿದ್ಯೆಯೂ ಭಾರ': ['ಸಂಸ್ಕಾರ', 'ನಡತೆ', 'ಗುಣ', 'ಶೀಲ']
+        },
+        difficulty: {'ಕನ್ನಡದ ಪ್ರಮುಖ ಉಪಭಾಷೆಗಳು':'yellow', 'ದ್ರಾವಿಡ ಭಾಷಾ ಕುಟುಂಬದ ಸದಸ್ಯರು':'green', 'ಗಾದೆ: _____ ಇಲ್ಲದಿದ್ದರೆ, ವಿದ್ಯೆಯೂ ಭಾರ':'blue', 'ಆಯುರ್ವೇದದ ತ್ರಿದೋಷಗಳು':'purple'}
+    },
+    { // Puzzle 29
+        solution: {
+            'ಅಲಂಕಾರ ಶಾಸ್ತ್ರದ ಪ್ರಮುಖ ಸಿದ್ಧಾಂತಗಳು': ['ರಸ', 'ಧ್ವನಿ', 'ರೀತಿ', 'ಔಚಿತ್ಯ'],
+            'ಕಾವ್ಯದ ಪ್ರಯೋಜನಗಳು': ['ಯಶಸ್ಸು', 'ಅರ್ಥಲಾಭ', 'ವ್ಯವಹಾರ ಜ್ಞಾನ', 'ಕಾಂತಾಸಮ್ಮಿತಿ'],
+            'ಗೆಲುವನ್ನು ಸೂಚಿಸುವ ಸಮಾನಾರ್ಥಕಗಳು': ['ವಿಜಯ', 'ಜಯ', 'ಯಶಸ್ಸು', 'ಗೆಲುವು'],
+            'ಗಾದೆ: _____ ಇದ್ದರೆ, ಕಾಗೆಯೂ ಹಂಸ': ['ಬಣ್ಣ', 'ರೂಪ', 'ಸೌಂದರ್ಯ', 'ಅಂದ']
+        },
+        difficulty: {'ಗೆಲುವನ್ನು ಸೂಚಿಸುವ ಸಮಾನಾರ್ಥಕಗಳು':'yellow', 'ಕಾವ್ಯದ ಪ್ರಯೋಜನಗಳು':'green', 'ಗಾದೆ: _____ ಇದ್ದರೆ, ಕಾಗೆಯೂ ಹಂಸ':'blue', 'ಅಲಂಕಾರ ಶಾಸ್ತ್ರದ ಪ್ರಮುಖ ಸಿದ್ಧಾಂತಗಳು':'purple'}
+    },
+    { // Puzzle 30
+        solution: {
+            'ಹವಾಮಾನದ ವಿದ್ಯಮಾನಗಳು': ['ಮಳೆ', 'ಗಾಳಿ', 'ಬಿಸಿಲು', 'ಚಳಿ'],
+            'ನೈಸರ್ಗಿಕ ವಿಕೋಪಗಳು': ['ಭೂಕಂಪ', 'ಜ್ವಾಲಾಮುಖಿ', 'ಸುನಾಮಿ', 'ಚಂಡಮಾರುತ'],
+            'ಗಾದೆ: _____ ಇದ್ದರೆ, ಬಂಡೆಯೂ ಪುಡಿ': ['ಸಾಧನ', 'ಉಪಕರಣ', 'ಆಯುಧ', 'ಪರಿಕರ'],
+            'ಕನ್ನಡ ವ್ಯಾಕರಣದ "ಸಂಧಿ" ಪ್ರಕಾರಗಳು': ['ಲೋಪ', 'ಆಗಮ', 'ಆದೇಶ', 'ಪ್ರಕೃತಿಭಾವ']
+        },
+        difficulty: {'ಹವಾಮಾನದ ವಿದ್ಯಮಾನಗಳು':'yellow', 'ನೈಸರ್ಗಿಕ ವಿಕೋಪಗಳು':'green', 'ಗಾದೆ: _____ ಇದ್ದರೆ, ಬಂಡೆಯೂ ಪುಡಿ':'blue', 'ಕನ್ನಡ ವ್ಯಾಕರಣದ "ಸಂಧಿ" ಪ್ರಕಾರಗಳು':'purple'}
+    },
+    { // Puzzle 31
+        solution: {
+            'ನ್ಯಾಯ ದರ್ಶನದ "ಪ್ರಮಾಣ"ಗಳು': ['ಪ್ರತ್ಯಕ್ಷ', 'ಅನುಮಾನ', 'ಉಪಮಾನ', 'ಶಬ್ದ'],
+            'ಸಾंख्य ದರ್ಶನದ ಪರಿಕಲ್ಪನೆಗಳು': ['ಪುರುಷ', 'ಪ್ರಕೃತಿ', 'ಗುಣ', 'ಮಹತ್'],
+            'ಅಜ್ಞಾನವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು': ['ಅವಿದ್ಯೆ', 'ಮರೆವು', 'ಭ್ರಾಂತಿ', 'ಮೋಹ'],
+            'ಗಾದೆ: _____ ಗೆದ್ದವನು ಜಗವನ್ನೇ ಗೆಲ್ಲುತ್ತಾನೆ': ['ಮನಸ್ಸನ್ನು', 'ಇಂದ್ರಿಯಗಳನ್ನು', 'ಆಸೆಗಳನ್ನು', 'ಕಾಮನೆಗಳನ್ನು']
+        },
+        difficulty: {'ಅಜ್ಞಾನವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಗಾದೆ: _____ ಗೆದ್ದವನು ಜಗವನ್ನೇ ಗೆಲ್ಲುತ್ತಾನೆ':'green', 'ಸಾंख्य ದರ್ಶನದ ಪರಿಕಲ್ಪನೆಗಳು':'blue', 'ನ್ಯಾಯ ದರ್ಶನದ "ಪ್ರಮಾಣ"ಗಳು':'purple'}
+    }
+];
+// --- END: NEW PUZZLE LIBRARY ---
+
+
+// --- JAVASCRIPT LOGIC ---
+// This section includes the new "Show Solution on Replay" logic.
+let currentPuzzle;let words;let selectedWords=[];let mistakesLeft=4;const MAX_MISTAKES=4;let foundGroupsOrder=[];let gameActive=true;const gridContainer=document.getElementById('grid-container');const messageEl=document.getElementById('message');const mistakesContainer=document.getElementById('mistakes-container');const controlsContainer=document.getElementById('controls');const foundGroupsContainer=document.getElementById('found-groups-container');const gameOverScreen=document.getElementById('game-over-screen');const gameOverTitle=document.getElementById('game-over-title');const gameOverMessage=document.getElementById('game-over-message');const solutionDisplay=document.getElementById('solution-display');const playAgainButton=document.getElementById('play-again-button');function getTodayKey(){const today=new Date;return today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate()}
+function getDailyPuzzleIndex(){const startDate=new Date('2024-01-01');const today=new Date;const diffTime=Math.abs(today-startDate);const diffDays=Math.floor(diffTime/(1000*60*60*24));return diffDays%puzzles.length}
+function initGame(){const todayKey='kannadaConnections_'+getTodayKey();const savedState=localStorage.getItem(todayKey);if(savedState){const result=JSON.parse(savedState);showSolutionScreen(result);return}setupNewGame()}
+function setupNewGame(){gameActive=true;const puzzleIndex=getDailyPuzzleIndex();currentPuzzle=puzzles[puzzleIndex];words=Object.values(currentPuzzle.solution).flat();const daySeed=new Date().toDateString();shuffle(words,daySeed);mistakesLeft=MAX_MISTAKES;foundGroupsOrder=[];selectedWords=[];messageEl.textContent='';foundGroupsContainer.innerHTML='';gameOverScreen.style.display='none';showGameUI();updateMistakesDisplay();renderGrid()}
+
+// --- MODIFIED FUNCTION: Shows the full solution if already played ---
+function showSolutionScreen(result) {
+    gridContainer.innerHTML = ''; // Clear the grid
+    foundGroupsContainer.innerHTML = ''; // Clear previous results
+    messageEl.textContent = 'ನೀವು ಇಂದಿನ ಆಟವನ್ನು ಈಗಾಗಲೇ ಆಡಿದ್ದೀರಿ. ಇಲ್ಲಿದೆ ಇಂದಿನ ಪರಿಹಾರ:';
+    
+    // Get the correct puzzle for the day using the saved index
+    const correctPuzzle = puzzles[result.puzzleIndex];
+    const difficulties = ['yellow', 'green', 'blue', 'purple'];
+    const sortedGroupNames = Object.keys(correctPuzzle.solution).sort((a,b) => {
+        return difficulties.indexOf(correctPuzzle.difficulty[a]) - difficulties.indexOf(correctPuzzle.difficulty[b]);
+    });
+
+    // Display the full solution
+    sortedGroupNames.forEach(groupName => {
+        foundGroupsContainer.appendChild(createFoundGroupElement(groupName, correctPuzzle.solution[groupName], correctPuzzle));
+    });
+    
+    mistakesContainer.innerHTML = ''; // Hide mistakes container
+    controlsContainer.innerHTML = ''; // Hide controls
+}
+
+function showGameUI(){mistakesContainer.innerHTML=`<span>ತಪ್ಪುಗಳು ಉಳಿದಿವೆ:</span>
+<div class="mistake-dot"></div><div class="mistake-dot"></div>
+<div class="mistake-dot"></div><div class="mistake-dot"></div>`;controlsContainer.innerHTML=`<button id="shuffle-button">ಬದಲಾಯಿಸು</button>
+<button id="deselect-all-button">ಎಲ್ಲವನ್ನೂ ಅಳಿಸು</button>
+<button id="submit-button" disabled>ಸಲ್ಲಿಸು</button>`;document.getElementById('shuffle-button').addEventListener('click',shuffleGrid);document.getElementById('deselect-all-button').addEventListener('click',deselectAll);document.getElementById('submit-button').addEventListener('click',handleSubmit)}
+function endGame(isWin){gameActive=false;document.getElementById('submit-button').disabled=true;const todayKey='kannadaConnections_'+getTodayKey();const resultToSave={puzzleIndex:getDailyPuzzleIndex()};localStorage.setItem(todayKey,JSON.stringify(resultToSave));setTimeout(()=>{solutionDisplay.innerHTML='';if(isWin){gameOverTitle.textContent='ಅಭಿನಂದನೆಗಳು!';gameOverMessage.textContent='ನೀವು ಇಂದಿನ ಸಂಪರ್ಕಗಳನ್ನು ಕಂಡುಕೊಂಡಿದ್ದೀರಿ!'}else{gameOverTitle.textContent='ಆಟ ಮುಗಿಯಿತು';gameOverMessage.textContent='ಇಂದಿನ ಸರಿಯಾದ ಉತ್ತರಗಳು ಇಲ್ಲಿವೆ:';const difficulties=['yellow','green','blue','purple'];const sortedGroupNames=Object.keys(currentPuzzle.solution).sort((a,b)=>{return difficulties.indexOf(currentPuzzle.difficulty[a])-difficulties.indexOf(currentPuzzle.difficulty[b])});sortedGroupNames.forEach(groupName=>{solutionDisplay.appendChild(createFoundGroupElement(groupName))})}gameOverScreen.style.display='flex'},1000)}
+function renderGrid(){gridContainer.innerHTML='';displayFoundGroups();const remainingWords=words.filter(word=>!isWordFound(word));remainingWords.forEach(word=>{const item=document.createElement('div');item.textContent=word;item.classList.add('grid-item');item.dataset.word=word;item.addEventListener('click',()=>selectWord(item));gridContainer.appendChild(item)})}
+function displayFoundGroups(){foundGroupsContainer.innerHTML='';const sortedFoundGroups=foundGroupsOrder.slice().sort((a,b)=>{const difficulties=['yellow','green','blue','purple'];return difficulties.indexOf(currentPuzzle.difficulty[a])-difficulties.indexOf(currentPuzzle.difficulty[b])});sortedFoundGroups.forEach(groupName=>{foundGroupsContainer.appendChild(createFoundGroupElement(groupName))})}
+function isWordFound(word){return foundGroupsOrder.some(groupName=>currentPuzzle.solution[groupName].includes(word))}
+function selectWord(item){if(!gameActive||item.classList.contains('found'))return;item.classList.toggle('selected');if(item.classList.contains('selected')){selectedWords.push(item.dataset.word)}else{selectedWords=selectedWords.filter(w=>w!==item.dataset.word)}if(selectedWords.length>4){const firstSelectedWord=selectedWords.shift();const firstSelectedItem=gridContainer.querySelector(`.grid-item[data-word="${firstSelectedWord}"]`);if(firstSelectedItem)firstSelectedItem.classList.remove('selected')}document.getElementById('submit-button').disabled=selectedWords.length!==4}
+function deselectAll(){selectedWords=[];document.querySelectorAll('.grid-item.selected').forEach(item=>item.classList.remove('selected'));document.getElementById('submit-button').disabled=true}
+function handleSubmit(){if(selectedWords.length!==4)return;let correctGroupName=null;for(const groupName in currentPuzzle.solution){const groupWords=currentPuzzle.solution[groupName];if(selectedWords.every(word=>groupWords.includes(word))&&selectedWords.length===groupWords.length){correctGroupName=groupName;break}}if(correctGroupName){if(foundGroupsOrder.includes(correctGroupName)){messageEl.textContent='ಈ ಗುಂಪನ್ನು ಈಗಾಗಲೇ ಕಂಡುಹಿಡಿಯಲಾಗಿದೆ!';deselectAll()}else{handleCorrectGuess(correctGroupName)}}else{let isOneAway=false;for(const groupName in currentPuzzle.solution){if(foundGroupsOrder.includes(groupName))continue;const groupWords=currentPuzzle.solution[groupName];const correctWordsInSelection=selectedWords.filter(word=>groupWords.includes(word));if(correctWordsInSelection.length===3){isOneAway=true;break}}handleIncorrectGuess(isOneAway)}}
+function handleCorrectGuess(groupName){messageEl.textContent='ಅದ್ಭುತ!';foundGroupsOrder.push(groupName);document.querySelectorAll('.grid-item.selected').forEach(item=>{item.classList.remove('selected');item.classList.add('found')});displayFoundGroups();gridContainer.innerHTML='';const remainingWords=words.filter(w=>!isWordFound(w));remainingWords.forEach(word=>{const item=document.createElement('div');item.textContent=word;item.classList.add('grid-item');item.dataset.word=word;item.addEventListener('click',()=>selectWord(item));gridContainer.appendChild(item)});deselectAll();if(foundGroupsOrder.length===4){endGame(true)}}
+
+// --- MODIFIED FUNCTION: Now accepts the whole puzzle to find the difficulty color ---
+function createFoundGroupElement(groupName, wordsArray, puzzle = currentPuzzle){const words=wordsArray||puzzle.solution[groupName];const groupColorClass=`correct-group-${puzzle.difficulty[groupName]}`;const foundGroupEl=document.createElement('div');foundGroupEl.classList.add('found-group',groupColorClass);const groupTitle=document.createElement('h3');groupTitle.textContent=groupName;const groupWordsP=document.createElement('p');groupWordsP.textContent=words.join(', ');foundGroupEl.appendChild(groupTitle);foundGroupEl.appendChild(groupWordsP);return foundGroupEl}
+
+function handleIncorrectGuess(isOneAway=false){mistakesLeft--;updateMistakesDisplay();messageEl.textContent=isOneAway?"ಒಂದು ದೂರದಲ್ಲಿ...":'ಕ್ಷಮಿಸಿ, ಅದು ಸರಿಯಲ್ಲ.';const selectedItems=document.querySelectorAll('.grid-item.selected');selectedItems.forEach(item=>{item.classList.add('shake');setTimeout(()=>item.classList.remove('shake'),400)});if(mistakesLeft===0){endGame(false)}}
+function updateMistakesDisplay(){document.querySelectorAll('#mistakes-container .mistake-dot').forEach((dot,index)=>{dot.classList.toggle('lost',index>=MAX_MISTAKES-mistakesLeft)})}
+function shuffleGrid(){if(!gameActive)return;const gridItems=Array.from(gridContainer.children);const daySeed=new Date().toDateString()+" "+gridItems.length;shuffle(gridItems,daySeed);gridItems.forEach(item=>gridContainer.appendChild(item));deselectAll()}
+function shuffle(array,seed){let a=1;for(let i=0;i<seed.length;i++){a=(a+seed.charCodeAt(i))*17}let t;for(let i=array.length-1;i>0;i--){a=(a^61)^(a>>>16);a=a+(a<<3);a=a^(a>>>4);a=Math.imul(a,668265261);a=a^(a>>>15);const j=Math.abs(a)%(i+1);t=array[i];array[i]=array[j];array[j]=t}return array}
+playAgainButton.addEventListener('click', initGame);
+initGame();
+</script>
+
+</body>
+</html>

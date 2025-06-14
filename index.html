@@ -6,234 +6,36 @@
     <title>ದೈನಂದಿನ ಕನ್ನಡ ಕನೆಕ್ಷನ್ಸ್</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;700&display=swap');
-
-        :root {
-            --background-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: #1e1e1e;
-            --card-border: #444;
-            --selected-bg: #004d40;
-            --button-bg: #00796b;
-            --button-hover-bg: #004d40;
-            --button-text: #ffffff;
-            --error-color: #cf6679;
-            --disabled-bg: #444;
-
-            --correct-yellow: #fdd835; /* Easy */
-            --correct-green: #7cb342;  /* Medium */
-            --correct-blue: #0288d1;   /* Hard */
-            --correct-purple: #8e24aa; /* Hardest */
-            --correct-text: #121212;
-        }
-
-        body {
-            font-family: 'Noto Sans Kannada', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            margin: 0;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-
-        #game-container {
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--button-bg);
-            margin-bottom: 0.5rem;
-        }
-
-        #visitor-counter {
-            margin-bottom: 1rem;
-            opacity: 0.9;
-        }
-
-        #instructions {
-            font-size: 1rem;
-            margin-bottom: 1.5rem;
-            color: #aaa;
-        }
-
-        #found-groups-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 1rem;
-        }
-
-        .found-group {
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-            animation: fadeIn 0.5s ease-in-out;
-            color: var(--correct-text);
-        }
-
-        .found-group h3 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        .found-group p {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 400;
-        }
-
-        #grid-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 1.5rem;
-        }
-
-        .grid-item {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.2s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 65px;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .grid-item.selected {
-            background-color: var(--selected-bg);
-            transform: scale(1.05);
-            border-color: var(--button-bg);
-        }
-
-        .grid-item.shake {
-            animation: shake 0.4s;
-        }
-        
-        .correct-group-yellow { background-color: var(--correct-yellow); }
-        .correct-group-green { background-color: var(--correct-green); }
-        .correct-group-blue { background-color: var(--correct-blue); }
-        .correct-group-purple { background-color: var(--correct-purple); }
-
-        #controls {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        button {
-            background-color: var(--button-bg);
-            color: var(--button-text);
-            border: none;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-family: 'Noto Sans Kannada', sans-serif;
-            font-weight: 700;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover:not(:disabled) {
-            background-color: var(--button-hover-bg);
-        }
-
-        button:disabled {
-            background-color: var(--disabled-bg);
-            color: #888;
-            cursor: not-allowed;
-        }
-
-        #mistakes-container {
-            margin-bottom: 1.5rem;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .mistake-dot {
-            height: 18px;
-            width: 18px;
-            background-color: var(--card-border);
-            border-radius: 50%;
-            display: inline-block;
-            transition: background-color 0.3s;
-        }
-
-        .mistake-dot.lost {
-            background-color: var(--error-color);
-        }
-
-        #message {
-            margin-top: 1rem;
-            font-size: 1.1rem;
-            min-height: 1.5rem;
-            font-weight: bold;
-            color: #eee;
-        }
-        
-        #game-over-screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.85);
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            text-align: center;
-            z-index: 100;
-            animation: fadeIn 0.5s;
-            overflow-y: auto;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-
-        #game-over-box {
-            background-color: var(--card-bg);
-            padding: 2rem;
-            border-radius: 12px;
-            border: 1px solid var(--card-border);
-            width: 100%;
-            max-width: 500px;
-        }
-        
-        #game-over-box h2 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-        
-        #solution-display {
-            margin-top: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        #game-over-box button {
-            margin-top: 1.5rem;
-        }
-
+        :root { --background-color: #121212; --text-color: #e0e0e0; --card-bg: #1e1e1e; --card-border: #444; --selected-bg: #004d40; --button-bg: #00796b; --button-hover-bg: #004d40; --button-text: #ffffff; --error-color: #cf6679; --disabled-bg: #444; --correct-yellow: #fdd835; --correct-green: #7cb342; --correct-blue: #0288d1; --correct-purple: #8e24aa; --correct-text: #121212; }
+        body { font-family: 'Noto Sans Kannada', sans-serif; background-color: var(--background-color); color: var(--text-color); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
+        #game-container { width: 100%; max-width: 500px; text-align: center; }
+        h1 { font-size: 2.2rem; font-weight: 700; color: var(--button-bg); margin-bottom: 0.5rem; }
+        #visitor-counter { margin-bottom: 1rem; opacity: 0.9; }
+        #instructions { font-size: 1rem; margin-bottom: 1.5rem; color: #aaa; }
+        #found-groups-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+        .found-group { border-radius: 8px; padding: 1rem; text-align: center; animation: fadeIn 0.5s ease-in-out; color: var(--correct-text); }
+        .found-group h3 { margin: 0 0 0.5rem 0; font-size: 1.1rem; font-weight: 700; }
+        .found-group p { margin: 0; font-size: 1rem; font-weight: 400; }
+        #grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+        .grid-item { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s, transform 0.2s; display: flex; justify-content: center; align-items: center; min-height: 65px; -webkit-tap-highlight-color: transparent; }
+        .grid-item.selected { background-color: var(--selected-bg); transform: scale(1.05); border-color: var(--button-bg); }
+        .grid-item.shake { animation: shake 0.4s; }
+        .correct-group-yellow { background-color: var(--correct-yellow); } .correct-group-green { background-color: var(--correct-green); } .correct-group-blue { background-color: var(--correct-blue); } .correct-group-purple { background-color: var(--correct-purple); }
+        #controls { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1rem; }
+        button { background-color: var(--button-bg); color: var(--button-text); border: none; padding: 12px 24px; font-size: 1rem; font-family: 'Noto Sans Kannada', sans-serif; font-weight: 700; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; }
+        button:hover:not(:disabled) { background-color: var(--button-hover-bg); }
+        button:disabled { background-color: var(--disabled-bg); color: #888; cursor: not-allowed; }
+        #mistakes-container { margin-bottom: 1.5rem; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 27px; }
+        .mistake-dot { height: 18px; width: 18px; background-color: var(--card-border); border-radius: 50%; display: inline-block; transition: background-color 0.3s; }
+        .mistake-dot.lost { background-color: var(--error-color); }
+        #message { margin-top: 1rem; font-size: 1.1rem; min-height: 1.5rem; font-weight: bold; color: #eee; }
+        #game-over-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); justify-content: center; align-items: center; flex-direction: column; text-align: center; z-index: 100; animation: fadeIn 0.5s; overflow-y: auto; padding: 1rem; box-sizing: border-box; }
+        #game-over-box { background-color: var(--card-bg); padding: 2rem; border-radius: 12px; border: 1px solid var(--card-border); width: 100%; max-width: 500px; }
+        #game-over-box h2 { font-size: 2rem; margin-bottom: 1rem; }
+        #solution-display { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+        #game-over-box button { margin-top: 1.5rem; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
         @media (max-width: 600px) { body { align-items: flex-start; } h1 { font-size: 2rem; } .grid-item { min-height: 60px; font-size: 1rem; } #game-over-box { padding: 1.5rem; } }
     </style>
 </head>
@@ -246,17 +48,14 @@
     </div>
 
     <p id="instructions">ಒಂದು ಗುಂಪನ್ನು ರೂಪಿಸುವ ನಾಲ್ಕು ಪದಗಳನ್ನು ಹುಡುಕಿ.</p>
-    
+
     <div id="found-groups-container"></div>
     <div id="grid-container"></div>
-    
+
     <div id="message"></div>
-    
-    <div id="mistakes-container">
-        </div>
-    
-    <div id="controls">
-        </div>
+
+    <div id="mistakes-container"></div>
+    <div id="controls"></div>
 </div>
 
 <div id="game-over-screen">
@@ -269,6 +68,7 @@
 </div>
 
 <script>
+// --- START: PUZZLE LIBRARY ---
 const puzzles = [
     { // Puzzle 1
         solution: {
@@ -550,26 +350,320 @@ const puzzles = [
         difficulty: {'ಅಜ್ಞಾನವನ್ನು ಸೂಚಿಸುವ ಪದಗಳು':'yellow', 'ಗಾದೆ: _____ ಗೆದ್ದವನು ಜಗವನ್ನೇ ಗೆಲ್ಲುತ್ತಾನೆ':'green', 'ಸಾंख्य ದರ್ಶನದ ಪರಿಕಲ್ಪನೆಗಳು':'blue', 'ನ್ಯಾಯ ದರ್ಶನದ "ಪ್ರಮಾಣ"ಗಳು':'purple'}
     }
 ];
+// --- END: PUZZLE LIBRARY ---
 
-// --- The JavaScript logic below is exactly the same as the previous version. It handles the one-chance-per-day feature. ---
-let currentPuzzle;let words;let selectedWords=[];let mistakesLeft=4;const MAX_MISTAKES=4;let foundGroupsOrder=[];let gameActive=true;const gridContainer=document.getElementById('grid-container');const messageEl=document.getElementById('message');const mistakesContainer=document.getElementById('mistakes-container');const controlsContainer=document.getElementById('controls');const foundGroupsContainer=document.getElementById('found-groups-container');const gameOverScreen=document.getElementById('game-over-screen');const gameOverTitle=document.getElementById('game-over-title');const gameOverMessage=document.getElementById('game-over-message');const solutionDisplay=document.getElementById('solution-display');const playAgainButton=document.getElementById('play-again-button');function getTodayKey(){const today=new Date;return today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate()}function getDailyPuzzleIndex(){const startDate=new Date('2024-01-01');const today=new Date;const diffTime=Math.abs(today-startDate);const diffDays=Math.floor(diffTime/(1000*60*60*24));return diffDays%puzzles.length}function initGame(){const todayKey='kannadaConnections_'+getTodayKey();const savedState=localStorage.getItem(todayKey);if(savedState){const result=JSON.parse(savedState);showAlreadyPlayedScreen(result);return}setupNewGame()}function setupNewGame(){gameActive=true;const puzzleIndex=getDailyPuzzleIndex();currentPuzzle=puzzles[puzzleIndex];words=Object.values(currentPuzzle.solution).flat();const daySeed=new Date().toDateString();shuffle(words,daySeed);mistakesLeft=MAX_MISTAKES;foundGroupsOrder=[];selectedWords=[];messageEl.textContent='';foundGroupsContainer.innerHTML='';gameOverScreen.style.display='none';showGameUI();updateMistakesDisplay();renderGrid()}function showAlreadyPlayedScreen(result){gridContainer.innerHTML='';foundGroupsContainer.innerHTML='';messageEl.textContent='ನೀವು ಇಂದಿನ ಆಟವನ್ನು ಈಗಾಗಲೇ ಆಡಿದ್ದೀರಿ. ನಾಳೆ ಮತ್ತೆ ಬನ್ನಿ!';result.foundGroupsOrder.forEach(groupName=>{foundGroupsContainer.appendChild(createFoundGroupElement(groupName))});mistakesContainer.innerHTML=`<p>ನಿಮ್ಮ ಉಳಿದ ತಪ್ಪುಗಳು: ${result.mistakesLeft}</p>`;controlsContainer.innerHTML=''}function showGameUI(){mistakesContainer.innerHTML=`<span>ತಪ್ಪುಗಳು ಉಳಿದಿವೆ:</span>
+
+// --- JAVASCRIPT LOGIC ---
+let currentPuzzle;
+let words;
+let selectedWords = [];
+let mistakesLeft = 4;
+const MAX_MISTAKES = 4;
+let foundGroupsOrder = [];
+let gameActive = true;
+
+const gridContainer = document.getElementById('grid-container');
+const messageEl = document.getElementById('message');
+const mistakesContainer = document.getElementById('mistakes-container');
+const controlsContainer = document.getElementById('controls');
+const foundGroupsContainer = document.getElementById('found-groups-container');
+const gameOverScreen = document.getElementById('game-over-screen');
+const gameOverTitle = document.getElementById('game-over-title');
+const gameOverMessage = document.getElementById('game-over-message');
+const solutionDisplay = document.getElementById('solution-display');
+const playAgainButton = document.getElementById('play-again-button');
+
+function getTodayKey() {
+    const today = new Date();
+    return today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate();
+}
+
+function getDailyPuzzleIndex() {
+    const startDate = new Date('2024-01-01');
+    const today = new Date();
+    const diffTime = Math.abs(today - startDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays % puzzles.length;
+}
+
+function initGame() {
+    const todayKey = 'kannadaConnections_' + getTodayKey();
+    const savedState = localStorage.getItem(todayKey);
+    if (savedState) {
+        const result = JSON.parse(savedState);
+        showSolutionScreen(result);
+        return;
+    }
+    setupNewGame();
+}
+
+function setupNewGame() {
+    gameActive = true;
+    const puzzleIndex = getDailyPuzzleIndex();
+    currentPuzzle = puzzles[puzzleIndex];
+    words = Object.values(currentPuzzle.solution).flat();
+    const daySeed = new Date().toDateString();
+    shuffle(words, daySeed);
+    mistakesLeft = MAX_MISTAKES;
+    foundGroupsOrder = [];
+    selectedWords = [];
+    messageEl.textContent = '';
+    foundGroupsContainer.innerHTML = '';
+    gameOverScreen.style.display = 'none';
+    showGameUI();
+    updateMistakesDisplay();
+    renderGrid();
+}
+
+/**
+ * Shows the full solution screen if the user has already played today.
+ * This function clears the game board and displays all the correct groups and words.
+ * @param {object} result - The saved game result from localStorage.
+ */
+function showSolutionScreen(result) {
+    gridContainer.innerHTML = '';
+    foundGroupsContainer.innerHTML = '';
+    messageEl.textContent = 'ನೀವು ಇಂದಿನ ಆಟವನ್ನು ಈಗಾಗಲೇ ಆಡಿದ್ದೀರಿ. ಇಲ್ಲಿದೆ ಇಂದಿನ ಪರಿಹಾರ:';
+
+    // Get the correct puzzle for the day using the saved index
+    const correctPuzzle = puzzles[result.puzzleIndex];
+    const difficulties = ['yellow', 'green', 'blue', 'purple'];
+    const sortedGroupNames = Object.keys(correctPuzzle.solution).sort((a, b) => {
+        return difficulties.indexOf(correctPuzzle.difficulty[a]) - difficulties.indexOf(correctPuzzle.difficulty[b]);
+    });
+
+    // Display the full solution
+    sortedGroupNames.forEach(groupName => {
+        foundGroupsContainer.appendChild(createFoundGroupElement(groupName, correctPuzzle.solution[groupName], correctPuzzle));
+    });
+
+    mistakesContainer.innerHTML = ''; // Hide mistakes container
+    controlsContainer.innerHTML = ''; // Hide controls
+}
+
+function showGameUI() {
+    mistakesContainer.innerHTML = `<span>ತಪ್ಪುಗಳು ಉಳಿದಿವೆ:</span>
 <div class="mistake-dot"></div><div class="mistake-dot"></div>
-<div class="mistake-dot"></div><div class="mistake-dot"></div>`;controlsContainer.innerHTML=`<button id="shuffle-button">ಬದಲಾಯಿಸು</button>
+<div class="mistake-dot"></div><div class="mistake-dot"></div>`;
+    controlsContainer.innerHTML = `<button id="shuffle-button">ಬದಲಾಯಿಸು</button>
 <button id="deselect-all-button">ಎಲ್ಲವನ್ನೂ ಅಳಿಸು</button>
-<button id="submit-button" disabled>ಸಲ್ಲಿಸು</button>`;document.getElementById('shuffle-button').addEventListener('click',shuffleGrid);document.getElementById('deselect-all-button').addEventListener('click',deselectAll);document.getElementById('submit-button').addEventListener('click',handleSubmit)}function endGame(isWin){gameActive=false;document.getElementById('submit-button').disabled=true;const todayKey='kannadaConnections_'+getTodayKey();const resultToSave={foundGroupsOrder:foundGroupsOrder,mistakesLeft:mistakesLeft,puzzleIndex:getDailyPuzzleIndex()};localStorage.setItem(todayKey,JSON.stringify(resultToSave));setTimeout(()=>{solutionDisplay.innerHTML='';if(isWin){gameOverTitle.textContent='ಅಭಿನಂದನೆಗಳು!';gameOverMessage.textContent='ನೀವು ಇಂದಿನ ಸಂಪರ್ಕಗಳನ್ನು ಕಂಡುಕೊಂಡಿದ್ದೀರಿ!'}else{gameOverTitle.textContent='ಆಟ ಮುಗಿಯಿತು';gameOverMessage.textContent='ಇಂದಿನ ಸರಿಯಾದ ಉತ್ತರಗಳು ಇಲ್ಲಿವೆ:';const difficulties=['yellow','green','blue','purple'];const sortedGroupNames=Object.keys(currentPuzzle.solution).sort((a,b)=>{return difficulties.indexOf(currentPuzzle.difficulty[a])-difficulties.indexOf(currentPuzzle.difficulty[b])});sortedGroupNames.forEach(groupName=>{solutionDisplay.appendChild(createFoundGroupElement(groupName))})}gameOverScreen.style.display='flex'},1000)}
-function renderGrid(){gridContainer.innerHTML='';displayFoundGroups();const remainingWords=words.filter(word=>!isWordFound(word));remainingWords.forEach(word=>{const item=document.createElement('div');item.textContent=word;item.classList.add('grid-item');item.dataset.word=word;item.addEventListener('click',()=>selectWord(item));gridContainer.appendChild(item)})}
-function displayFoundGroups(){foundGroupsContainer.innerHTML='';const sortedFoundGroups=foundGroupsOrder.slice().sort((a,b)=>{const difficulties=['yellow','green','blue','purple'];return difficulties.indexOf(currentPuzzle.difficulty[a])-difficulties.indexOf(currentPuzzle.difficulty[b])});sortedFoundGroups.forEach(groupName=>{foundGroupsContainer.appendChild(createFoundGroupElement(groupName))})}
-function isWordFound(word){return foundGroupsOrder.some(groupName=>currentPuzzle.solution[groupName].includes(word))}
-function selectWord(item){if(!gameActive||item.classList.contains('found'))return;item.classList.toggle('selected');if(item.classList.contains('selected')){selectedWords.push(item.dataset.word)}else{selectedWords=selectedWords.filter(w=>w!==item.dataset.word)}if(selectedWords.length>4){const firstSelectedWord=selectedWords.shift();const firstSelectedItem=gridContainer.querySelector(`.grid-item[data-word="${firstSelectedWord}"]`);if(firstSelectedItem)firstSelectedItem.classList.remove('selected')}document.getElementById('submit-button').disabled=selectedWords.length!==4}
-function deselectAll(){selectedWords=[];document.querySelectorAll('.grid-item.selected').forEach(item=>item.classList.remove('selected'));document.getElementById('submit-button').disabled=true}
-function handleSubmit(){if(selectedWords.length!==4)return;let correctGroupName=null;for(const groupName in currentPuzzle.solution){const groupWords=currentPuzzle.solution[groupName];if(selectedWords.every(word=>groupWords.includes(word))&&selectedWords.length===groupWords.length){correctGroupName=groupName;break}}if(correctGroupName){if(foundGroupsOrder.includes(correctGroupName)){messageEl.textContent='ಈ ಗುಂಪನ್ನು ಈಗಾಗಲೇ ಕಂಡುಹಿಡಿಯಲಾಗಿದೆ!';deselectAll()}else{handleCorrectGuess(correctGroupName)}}else{let isOneAway=false;for(const groupName in currentPuzzle.solution){if(foundGroupsOrder.includes(groupName))continue;const groupWords=currentPuzzle.solution[groupName];const correctWordsInSelection=selectedWords.filter(word=>groupWords.includes(word));if(correctWordsInSelection.length===3){isOneAway=true;break}}handleIncorrectGuess(isOneAway)}}
-function handleCorrectGuess(groupName){messageEl.textContent='ಅದ್ಭುತ!';foundGroupsOrder.push(groupName);document.querySelectorAll('.grid-item.selected').forEach(item=>{item.classList.remove('selected');item.classList.add('found')});displayFoundGroups();gridContainer.innerHTML='';const remainingWords=words.filter(w=>!isWordFound(w));remainingWords.forEach(word=>{const item=document.createElement('div');item.textContent=word;item.classList.add('grid-item');item.dataset.word=word;item.addEventListener('click',()=>selectWord(item));gridContainer.appendChild(item)});deselectAll();if(foundGroupsOrder.length===4){endGame(true)}}
-function createFoundGroupElement(groupName,wordsArray){const words=wordsArray||currentPuzzle.solution[groupName];const groupColorClass=`correct-group-${currentPuzzle.difficulty[groupName]}`;const foundGroupEl=document.createElement('div');foundGroupEl.classList.add('found-group',groupColorClass);const groupTitle=document.createElement('h3');groupTitle.textContent=groupName;const groupWordsP=document.createElement('p');groupWordsP.textContent=words.join(', ');foundGroupEl.appendChild(groupTitle);foundGroupEl.appendChild(groupWordsP);return foundGroupEl}
-function handleIncorrectGuess(isOneAway=false){mistakesLeft--;updateMistakesDisplay();messageEl.textContent=isOneAway?"ಒಂದು ದೂರದಲ್ಲಿ...":'ಕ್ಷಮಿಸಿ, ಅದು ಸರಿಯಲ್ಲ.';const selectedItems=document.querySelectorAll('.grid-item.selected');selectedItems.forEach(item=>{item.classList.add('shake');setTimeout(()=>item.classList.remove('shake'),400)});if(mistakesLeft===0){endGame(false)}}
-function updateMistakesDisplay(){document.querySelectorAll('#mistakes-container .mistake-dot').forEach((dot,index)=>{dot.classList.toggle('lost',index>=MAX_MISTAKES-mistakesLeft)})}
-function shuffleGrid(){if(!gameActive)return;const gridItems=Array.from(gridContainer.children);const daySeed=new Date().toDateString()+" "+gridItems.length;shuffle(gridItems,daySeed);gridItems.forEach(item=>gridContainer.appendChild(item));deselectAll()}
-function shuffle(array,seed){let a=1;for(let i=0;i<seed.length;i++){a=(a+seed.charCodeAt(i))*17}let t;for(let i=array.length-1;i>0;i--){a=(a^61)^(a>>>16);a=a+(a<<3);a=a^(a>>>4);a=Math.imul(a,668265261);a=a^(a>>>15);const j=Math.abs(a)%(i+1);t=array[i];array[i]=array[j];array[j]=t}return array}
-playAgainButton.addEventListener('click', initGame);
+<button id="submit-button" disabled>ಸಲ್ಲಿಸು</button>`;
+    document.getElementById('shuffle-button').addEventListener('click', shuffleGrid);
+    document.getElementById('deselect-all-button').addEventListener('click', deselectAll);
+    document.getElementById('submit-button').addEventListener('click', handleSubmit);
+}
+
+function endGame(isWin) {
+    gameActive = false;
+    if(document.getElementById('submit-button')) {
+        document.getElementById('submit-button').disabled = true;
+    }
+
+    // Save the fact that the user has completed the puzzle for today
+    const todayKey = 'kannadaConnections_' + getTodayKey();
+    const resultToSave = { puzzleIndex: getDailyPuzzleIndex() };
+    localStorage.setItem(todayKey, JSON.stringify(resultToSave));
+
+    setTimeout(() => {
+        solutionDisplay.innerHTML = '';
+        if (isWin) {
+            gameOverTitle.textContent = 'ಅಭಿನಂದನೆಗಳು!';
+            gameOverMessage.textContent = 'ನೀವು ಇಂದಿನ ಸಂಪರ್ಕಗಳನ್ನು ಕಂಡುಕೊಂಡಿದ್ದೀರಿ!';
+        } else {
+            gameOverTitle.textContent = 'ಆಟ ಮುಗಿಯಿತು';
+            gameOverMessage.textContent = 'ಇಂದಿನ ಸರಿಯಾದ ಉತ್ತರಗಳು ಇಲ್ಲಿವೆ:';
+            const difficulties = ['yellow', 'green', 'blue', 'purple'];
+            const sortedGroupNames = Object.keys(currentPuzzle.solution).sort((a, b) => {
+                return difficulties.indexOf(currentPuzzle.difficulty[a]) - difficulties.indexOf(currentPuzzle.difficulty[b]);
+            });
+            sortedGroupNames.forEach(groupName => {
+                // For the loss screen, we show the remaining solutions
+                if (!foundGroupsOrder.includes(groupName)) {
+                     solutionDisplay.appendChild(createFoundGroupElement(groupName, currentPuzzle.solution[groupName], currentPuzzle));
+                }
+            });
+        }
+        gameOverScreen.style.display = 'flex';
+    }, 1500);
+}
+
+function renderGrid() {
+    gridContainer.innerHTML = '';
+    displayFoundGroups();
+    const remainingWords = words.filter(word => !isWordFound(word));
+    remainingWords.forEach(word => {
+        const item = document.createElement('div');
+        item.textContent = word;
+        item.classList.add('grid-item');
+        item.dataset.word = word;
+        item.addEventListener('click', () => selectWord(item));
+        gridContainer.appendChild(item);
+    });
+}
+
+function displayFoundGroups() {
+    foundGroupsContainer.innerHTML = '';
+    const difficulties = ['yellow', 'green', 'blue', 'purple'];
+    const sortedFoundGroups = foundGroupsOrder.slice().sort((a, b) => {
+        return difficulties.indexOf(currentPuzzle.difficulty[a]) - difficulties.indexOf(currentPuzzle.difficulty[b]);
+    });
+    sortedFoundGroups.forEach(groupName => {
+        foundGroupsContainer.appendChild(createFoundGroupElement(groupName, currentPuzzle.solution[groupName], currentPuzzle));
+    });
+}
+
+function isWordFound(word) {
+    return foundGroupsOrder.some(groupName => currentPuzzle.solution[groupName].includes(word));
+}
+
+function selectWord(item) {
+    if (!gameActive || item.classList.contains('found')) return;
+    item.classList.toggle('selected');
+    if (item.classList.contains('selected')) {
+        selectedWords.push(item.dataset.word);
+    } else {
+        selectedWords = selectedWords.filter(w => w !== item.dataset.word);
+    }
+    if (selectedWords.length > 4) {
+        const firstSelectedWord = selectedWords.shift();
+        const firstSelectedItem = gridContainer.querySelector(`.grid-item[data-word="${firstSelectedWord}"]`);
+        if (firstSelectedItem) firstSelectedItem.classList.remove('selected');
+    }
+    document.getElementById('submit-button').disabled = selectedWords.length !== 4;
+}
+
+function deselectAll() {
+    selectedWords = [];
+    document.querySelectorAll('.grid-item.selected').forEach(item => item.classList.remove('selected'));
+    if(document.getElementById('submit-button')) {
+      document.getElementById('submit-button').disabled = true;
+    }
+}
+
+function handleSubmit() {
+    if (selectedWords.length !== 4) return;
+    let correctGroupName = null;
+    for (const groupName in currentPuzzle.solution) {
+        const groupWords = currentPuzzle.solution[groupName];
+        if (selectedWords.every(word => groupWords.includes(word)) && selectedWords.length === groupWords.length) {
+            correctGroupName = groupName;
+            break;
+        }
+    }
+    if (correctGroupName) {
+        if (foundGroupsOrder.includes(correctGroupName)) {
+            messageEl.textContent = 'ಈ ಗುಂಪನ್ನು ಈಗಾಗಲೇ ಕಂಡುಹಿಡಿಯಲಾಗಿದೆ!';
+            deselectAll();
+        } else {
+            handleCorrectGuess(correctGroupName);
+        }
+    } else {
+        let isOneAway = false;
+        for (const groupName in currentPuzzle.solution) {
+            if (foundGroupsOrder.includes(groupName)) continue;
+            const groupWords = currentPuzzle.solution[groupName];
+            const correctWordsInSelection = selectedWords.filter(word => groupWords.includes(word));
+            if (correctWordsInSelection.length === 3) {
+                isOneAway = true;
+                break;
+            }
+        }
+        handleIncorrectGuess(isOneAway);
+    }
+}
+
+function handleCorrectGuess(groupName) {
+    messageEl.textContent = 'ಅದ್ಭುತ!';
+    foundGroupsOrder.push(groupName);
+
+    // Animate correct words into a found group
+    const newGroupElement = createFoundGroupElement(groupName, currentPuzzle.solution[groupName], currentPuzzle);
+    foundGroupsContainer.appendChild(newGroupElement);
+
+    const itemsToMove = [];
+    selectedWords.forEach(word => {
+        const item = gridContainer.querySelector(`.grid-item[data-word="${word}"]`);
+        if (item) itemsToMove.push(item);
+    });
+
+    // After animation, re-render the grid
+    setTimeout(() => {
+        renderGrid();
+        deselectAll();
+        if (foundGroupsOrder.length === 4) {
+            endGame(true);
+        }
+    }, 500); // Short delay for visual effect
+}
+
+function createFoundGroupElement(groupName, wordsArray, puzzle) {
+    const words = wordsArray || puzzle.solution[groupName];
+    const groupColorClass = `correct-group-${puzzle.difficulty[groupName]}`;
+    const foundGroupEl = document.createElement('div');
+    foundGroupEl.classList.add('found-group', groupColorClass);
+    const groupTitle = document.createElement('h3');
+    groupTitle.textContent = groupName;
+    const groupWordsP = document.createElement('p');
+    groupWordsP.textContent = words.join(', ');
+    foundGroupEl.appendChild(groupTitle);
+    foundGroupEl.appendChild(groupWordsP);
+    return foundGroupEl;
+}
+
+function handleIncorrectGuess(isOneAway = false) {
+    mistakesLeft--;
+    updateMistakesDisplay();
+    messageEl.textContent = isOneAway ? "ಒಂದು ದೂರದಲ್ಲಿ..." : 'ಕ್ಷಮಿಸಿ, ಅದು ಸರಿಯಲ್ಲ.';
+    const selectedItems = document.querySelectorAll('.grid-item.selected');
+    selectedItems.forEach(item => {
+        item.classList.add('shake');
+        setTimeout(() => item.classList.remove('shake'), 400);
+    });
+    if (mistakesLeft === 0) {
+        endGame(false);
+    }
+}
+
+function updateMistakesDisplay() {
+    if (!mistakesContainer) return;
+    document.querySelectorAll('#mistakes-container .mistake-dot').forEach((dot, index) => {
+        dot.classList.toggle('lost', index >= MAX_MISTAKES - mistakesLeft);
+    });
+}
+
+function shuffleGrid() {
+    if (!gameActive) return;
+    const gridItems = Array.from(gridContainer.children);
+    // Use a seed that changes daily but is consistent for shuffles within the same day
+    const daySeed = new Date().toDateString() + " " + gridItems.length;
+    shuffle(gridItems, daySeed);
+    gridItems.forEach(item => gridContainer.appendChild(item));
+    deselectAll();
+}
+
+function shuffle(array, seed) {
+    let a = 1;
+    for (let i = 0; i < seed.length; i++) {
+        a = (a + seed.charCodeAt(i)) * 17;
+    }
+    let t;
+    for (let i = array.length - 1; i > 0; i--) {
+        a = (a ^ 61) ^ (a >>> 16);
+        a = a + (a << 3);
+        a = a ^ (a >>> 4);
+        a = Math.imul(a, 668265261);
+        a = a ^ (a >>> 15);
+        const j = Math.abs(a) % (i + 1);
+        t = array[i];
+        array[i] = array[j];
+        array[j] = t;
+    }
+    return array;
+}
+
+playAgainButton.addEventListener('click', setupNewGame);
+
+// Initial game start
 initGame();
 </script>
 
